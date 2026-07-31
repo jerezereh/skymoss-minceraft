@@ -185,7 +185,12 @@ services:
   # invalid credential, exits, and this service crash-loops. Leave PLAYIT_SECRET_KEY
   # unset and simply don't start this service until you have a key.
   playit:
-    image: ghcr.io/playit-cloud/playit-agent:0.15
+    # Pin the current release line. Tag 0.15 is a years-old build that cannot
+    # authenticate against today's playit backend — the agent starts, never connects,
+    # and the tunnel stays offline while the setup wizard's own `docker run ... :latest`
+    # works fine. 1.0.10 and :latest are the same digest today; pinning keeps a
+    # silent upstream change from breaking player ingress.
+    image: ghcr.io/playit-cloud/playit-agent:1.0.10
     container_name: skymoss-playit
     restart: unless-stopped
     # Host networking so the agent can reach the published Minecraft port on
