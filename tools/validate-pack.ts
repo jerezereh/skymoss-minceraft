@@ -85,25 +85,34 @@ function findContentDrift(packDir: string): string[] {
     return []; // not a git checkout
   }
 
-  const drifted: string[] = [];
-  for (const f of tracked) {
-    // pack.toml and index.toml are this tool's own outputs and are not listed in the
-    // index, so they legitimately differ between a rebuild and the next commit.
-    // Flagging them would make the check cry wolf on every ordinary pack edit.
-    if (f.endsWith('/pack.toml') || f.endsWith('/index.toml')) continue;
-    try {
-      const committed = execFileSync('git', ['show', `:${f}`], {
-        encoding: 'buffer',
-        stdio: ['ignore', 'pipe', 'ignore'],
-        maxBuffer: 64 * 1024 * 1024,
-      });
-      const onDisk = readFileSync(f);
-      if (!committed.equals(onDisk)) drifted.push(f);
-    } catch {
-      // Staged-but-unreadable or newly added; the index check covers those.
-    }
+  // pack.toml and index.toml are this tool's own outputs and are not listed in the
+  // index, so they are irrelevant here.
+  const files = tracked.filter((f) => !f.endsWith('/pack.toml') && !f.endsWith('/index.toml'));
+  if (!files.length) return [];
+
+  // Hash each file twice: once as it sits on disk, once as git would store it after
+  // running its clean filters. A difference means committing changes the bytes, so
+  // any hash taken from the working tree describes content no other checkout will
+  // ever have. Comparing against the *staged* blob instead would flag every ordinary
+  // uncommitted edit, which is noise rather than signal.
+  const hashBatch = (args: string[]): string[] =>
+    execFileSync('git', args, {
+      input: files.join('\n') + '\n',
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+  try {
+    const filtered = hashBatch(['hash-object', '--stdin-paths']);
+    const raw = hashBatch(['hash-object', '--no-filters', '--stdin-paths']);
+    if (filtered.length !== files.length || raw.length !== files.length) return [];
+    return files.filter((_, i) => filtered[i] !== raw[i]);
+  } catch {
+    return [];
   }
-  return drifted;
 }
 
 async function main() {
