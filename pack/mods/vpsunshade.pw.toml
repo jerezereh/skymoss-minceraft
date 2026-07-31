@@ -3,8 +3,11 @@
 # sublevels. Ships in the FlyMoss world depend on it. Served from a GitHub release
 # rather than the mirror — our own build, stable URL, no domain required.
 #
-# side is "both": the handler runs against sublevel data, and the world uses sublevels
-# server-side. Narrow this to "client" only if confirmed render-only.
+# side = "both", verified rather than assumed: the jar has no net/minecraft/client
+# references at all and calls net.minecraft.server.level.ServerPlayer, so it is purely
+# server-side logic. It stays "both" anyway because packwiz's "server" excludes the
+# client entirely, and the client's integrated server needs this for singleplayer and
+# LAN worlds. Harmless on a multiplayer client — it contains no client code.
 # Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
 name = "VP Sunshade"
 filename = "vpsunshade-1.0.0.jar"

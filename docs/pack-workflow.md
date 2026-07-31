@@ -81,21 +81,59 @@ useless on the Linux server), and generated snapshots like
 
 ## Orphan mods
 
-Three mods in this pack exist nowhere upstream — they are bespoke builds:
+Three mods exist nowhere upstream — they're bespoke fixes for bugs in the current pack:
 
-| File | What it is |
-|---|---|
-| `KPEnchantFix-neoforge-mod.jar` | Kitchen Projectiles enchantment fix |
-| `kp_slot_fix-1.0.0.jar` | Kitchen Projectiles slot fix |
-| `vpsunshade-1.0.0.jar` | Valkyrien Skies sublevel sunshade handler |
+| File | License | What it fixes |
+|---|---|---|
+| `KPEnchantFix-neoforge-mod.jar` | CC0-1.0 | Loyalty/Multishot/Piercing not applying to Farmer's Delight knives |
+| `kp_slot_fix-1.0.0.jar` | CC0-1.0 | Thrown knives returning to the wrong inventory slot |
+| `vpsunshade-1.0.0.jar` | MIT | Vampirism vampires burning under a Sable/Create Aeronautics vessel roof |
 
-Their metafiles point at the mirror, and **the mirror is their only source**. If it is
-lost and no copy exists, they are gone permanently and the pack cannot be installed
-as-is. Make sure they are backed up somewhere off the server as well as on it.
+### Hosting
 
-Their `.pw.toml` files currently point at the placeholder host
-`mirror.skymoss.example`; `validate-pack.ts` reports how many placeholders remain.
-Replace it with your real mirror hostname before cutting a release.
+They're served from the **`orphan-mods-v1` GitHub release** on this repo, not the
+mirror. That's deliberate:
+
+- All three are our own work under CC0/MIT, so redistribution is explicitly fine —
+  unlike the 241 upstream mods, which is why those stay out of the repo.
+- A release asset is a stable, permanent URL requiring no domain and no mirror uptime.
+- GitHub backs it up, which matters more here than anywhere else in the pack: **these
+  three exist nowhere else on earth.** Lose them and the pack cannot be installed.
+
+Create the release once:
+
+```bash
+gh release create orphan-mods-v1 \
+  KPEnchantFix-neoforge-mod.jar kp_slot_fix-1.0.0.jar vpsunshade-1.0.0.jar \
+  --title "Orphan mods v1" \
+  --notes "Bespoke fixes with no upstream source. Referenced by pack/mods/*.pw.toml."
+```
+
+If you ever rebuild one, publish it under a **new tag** (`orphan-mods-v2`) rather than
+replacing the asset — the hash in the metafile pins the exact bytes, so overwriting an
+asset in place breaks installs with a hash mismatch.
+
+### Why all three are `side = "both"`
+
+None of them contain client code — verified by inspecting the jars, not assumed:
+
+- **KPEnchantFix** has no classes at all; it's `lowcodefml` / `showAsDataPack`, pure
+  `data/` overrides.
+- **kp_slot_fix** hooks `EntityJoinLevelEvent` and rewrites an `Inventory` slot, with
+  zero `net/minecraft/client` references.
+- **vpsunshade** calls `net.minecraft.server.level.ServerPlayer` directly.
+
+So all three are server-side *logic*. They're still `both` because packwiz's `server`
+means **dedicated server only** — it excludes the client, and the client's integrated
+server needs these for singleplayer and LAN worlds. They're 17 KB combined and inert
+on a multiplayer client, so `both` costs nothing and avoids a mod-list mismatch.
+
+### Keep the source
+
+Only compiled jars exist for two of them. If whoever wrote them still has the source,
+get it into a repo — a 6 KB jar with no source is one lost laptop away from being
+unmaintainable. `KPEnchantFix` is the exception: it's pure JSON, so the jar *is* the
+source.
 
 ## Releasing
 

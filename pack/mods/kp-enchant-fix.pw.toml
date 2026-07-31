@@ -1,8 +1,16 @@
 # HAND-WRITTEN — not resolvable from Modrinth or CurseForge.
-# Bespoke patch jar (modId kp_enchant_fix) that exists nowhere upstream. Served from
-# a GitHub release rather than the mirror: it is our own build, not redistributed
-# third-party code, so hosting it here is fine — and a release asset is a stable,
-# backed-up URL that needs no domain.
+# Bespoke datapack-mod (modId kp_enchant_fix, CC0-1.0) that exists nowhere upstream.
+# Served from a GitHub release rather than the mirror: our own work, not redistributed
+# third-party code, and a release asset is a stable, backed-up URL needing no domain.
+#
+# side = "both", verified: contains no code whatsoever — it is `lowcodefml` /
+# showAsDataPack, overriding data/minecraft/enchantment/{loyalty,multishot,piercing}
+# so knives accept them. Enchantment data is server-authoritative, but "both" is
+# correct because the client's integrated server needs it in singleplayer and LAN.
+#
+# NOTE: this replaces the three vanilla enchantment files outright rather than merging,
+# so it is a frozen copy of their 1.21.1 definitions. It must be re-synced by hand if
+# the pack ever moves to a newer Minecraft version.
 # Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
 name = "Kitchen Projectiles Enchantment Fix"
 filename = "KPEnchantFix-neoforge-mod.jar"

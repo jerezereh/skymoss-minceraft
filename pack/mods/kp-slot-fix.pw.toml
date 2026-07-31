@@ -1,6 +1,10 @@
 # HAND-WRITTEN — not resolvable from Modrinth or CurseForge.
-# Bespoke patch jar (modId kp_slot_fix), version 1.0.0. Served from a GitHub release
-# rather than the mirror — our own build, stable URL, no domain required.
+# Bespoke patch jar (modId kp_slot_fix), version 1.0.0, CC0-1.0. Served from a GitHub
+# release rather than the mirror — our own build, stable URL, no domain required.
+#
+# side = "both", verified: no net/minecraft/client references; it hooks
+# EntityJoinLevelEvent and rewrites an Inventory slot, which is server-authoritative.
+# Kept "both" so the client's integrated server has it in singleplayer and LAN.
 # Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
 name = "Kitchen Projectiles Slot Fix"
 filename = "kp_slot_fix-1.0.0.jar"
