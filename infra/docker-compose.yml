@@ -81,9 +81,6 @@ services:
       RCON_PASSWORD: "${RCON_PASSWORD:?set RCON_PASSWORD}"
       RCON_PORT: "25575"
 
-      # Modded servers routinely exceed the default startup budget on first run,
-      # when the pack is downloading and mods are being scanned.
-      MAX_TICK_TIME: "-1"
       SETUP_ONLY: "false"
       TZ: "${TZ:-America/Los_Angeles}"
     volumes:
