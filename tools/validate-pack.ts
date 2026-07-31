@@ -10,6 +10,7 @@
  */
 
 import { readdir, readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -56,6 +57,53 @@ function findIgnoredFiles(packDir: string): string[] {
     // Not a git checkout, or git unavailable — skip rather than fail the run.
     return [];
   }
+}
+
+/**
+ * Find pack files whose working-tree bytes differ from what is committed.
+ *
+ * index.toml pins a hash per file. If those hashes are computed from a working tree
+ * that git has since transformed — the classic case being Windows `core.autocrlf=true`
+ * rewriting LF to CRLF on checkout — then the index describes bytes nobody else will
+ * ever see. Every consumer clones the committed version, every hash mismatches, and
+ * packwiz aborts with "Hash invalid!" on file after file with no hint at the cause.
+ *
+ * Comparing against `git show :path` catches it at the source.
+ */
+function findContentDrift(packDir: string): string[] {
+  let tracked: string[];
+  try {
+    tracked = execFileSync('git', ['ls-files', '--', packDir], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  } catch {
+    return []; // not a git checkout
+  }
+
+  const drifted: string[] = [];
+  for (const f of tracked) {
+    // pack.toml and index.toml are this tool's own outputs and are not listed in the
+    // index, so they legitimately differ between a rebuild and the next commit.
+    // Flagging them would make the check cry wolf on every ordinary pack edit.
+    if (f.endsWith('/pack.toml') || f.endsWith('/index.toml')) continue;
+    try {
+      const committed = execFileSync('git', ['show', `:${f}`], {
+        encoding: 'buffer',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        maxBuffer: 64 * 1024 * 1024,
+      });
+      const onDisk = readFileSync(f);
+      if (!committed.equals(onDisk)) drifted.push(f);
+    } catch {
+      // Staged-but-unreadable or newly added; the index check covers those.
+    }
+  }
+  return drifted;
 }
 
 async function main() {
@@ -144,6 +192,23 @@ async function main() {
       level: 'error',
       message: 'inside pack/ but gitignored — would be missing from a fresh clone',
     });
+  }
+
+  // Content drift means index.toml hashes bytes that only exist on this machine.
+  const drifted = findContentDrift(packDir);
+  if (drifted.length) {
+    problems.push({
+      file: drifted[0],
+      level: 'error',
+      message:
+        `working-tree bytes differ from the committed version (${drifted.length} file(s)). ` +
+        'index.toml pins hashes nobody else will see, so installs fail with "Hash invalid!". ' +
+        'Usually Windows core.autocrlf; fix with: ' +
+        'git config --local core.autocrlf false && git checkout -- . && node tools/build-index.ts',
+    });
+    for (const f of drifted.slice(1, 6)) {
+      problems.push({ file: f, level: 'error', message: 'working-tree bytes differ from committed' });
+    }
   }
 
   // --- report -------------------------------------------------------------
