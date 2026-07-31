@@ -14,8 +14,21 @@ INSTALL=0
 
 missing=()
 optional_missing=()
+snap_docker=0
 
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# Ubuntu ships a `docker` snap, and `sudo snap install docker` is the first thing most
+# search results suggest. It cannot be used here: snap confinement blocks access to
+# paths outside $HOME, so compose files and bind mounts under /srv are invisible. The
+# symptom is baffling — docker resolves the working directory to
+# /var/lib/snapd/void and reports "no such file or directory" for a file that exists.
+detect_snap_docker() {
+  have docker || return 1
+  [[ "$(command -v docker)" == /snap/* ]] && return 0
+  have snap && snap list docker >/dev/null 2>&1 && return 0
+  return 1
+}
 
 check() {
   local cmd="$1" label="$2" tier="${3:-required}"
@@ -31,7 +44,13 @@ echo "Skymoss host prerequisites"
 echo
 
 echo "Required to run the stack:"
-check docker "container runtime"
+if detect_snap_docker; then
+  snap_docker=1
+  printf '  \033[31m✗\033[0m %-14s %s\n' "docker" "installed via SNAP — confined, cannot read /srv (required)"
+  missing+=("docker")
+else
+  check docker "container runtime"
+fi
 check git    "to clone this repo"
 
 echo
@@ -46,7 +65,7 @@ check node "runs tools/*.ts" optional
 
 echo
 # The compose plugin is a docker subcommand, not its own binary.
-if have docker; then
+if have docker && (( ! snap_docker )); then
   if docker compose version >/dev/null 2>&1; then
     printf '  \033[32m✓\033[0m %-14s %s\n' "compose" "$(docker compose version --short 2>/dev/null || echo present)"
   else
@@ -64,7 +83,14 @@ fi
 if (( ! INSTALL )); then
   echo "To install everything that's missing:"
   echo
-  if ! have docker; then
+  if (( snap_docker )); then
+    echo "  # Remove the snap first — it cannot read /srv, and having both installed"
+    echo "  # leaves /snap/bin/docker ahead of /usr/bin/docker on PATH."
+    echo "  # NOTE: this deletes any containers/volumes the snap was managing."
+    echo "  sudo snap remove docker"
+    echo
+  fi
+  if ! have docker || (( snap_docker )); then
     echo "  # Docker Engine + compose plugin (official convenience script)"
     echo "  curl -fsSL https://get.docker.com | sudo sh"
     echo "  sudo usermod -aG docker \$USER    # then log out and back in"
@@ -80,7 +106,18 @@ fi
 
 echo "Installing…"
 
-if ! have docker; then
+if (( snap_docker )); then
+  echo "==> Removing the docker snap (confined; cannot read /srv)"
+  echo "    This deletes containers and volumes the snap was managing."
+  read -r -p "    Continue? [y/N] " reply < /dev/tty || reply=n
+  if [[ "$reply" != [yY] ]]; then
+    echo "    Aborted. The stack cannot run on snap-packaged Docker." >&2
+    exit 1
+  fi
+  sudo snap remove docker
+fi
+
+if ! have docker || (( snap_docker )); then
   echo "==> Docker Engine"
   curl -fsSL https://get.docker.com | sudo sh
   sudo usermod -aG docker "$USER"

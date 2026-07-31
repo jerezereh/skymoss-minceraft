@@ -211,6 +211,24 @@ for why both, and what each is for.
 
 ## Troubleshooting
 
+**`open /var/lib/snapd/void/…: no such file or directory`** — Docker is installed as a
+**snap**. Snap confinement blocks access to paths outside `$HOME`, so it cannot read
+the compose file or bind-mount anything under `/srv`; `/var/lib/snapd/void` is the
+placeholder directory it falls back to. The file exists, it just isn't visible.
+
+`sudo snap install docker` is what most search results suggest, so this is easy to hit.
+Replace it with Docker Engine proper:
+
+```bash
+sudo snap remove docker          # deletes containers/volumes the snap managed
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker "$USER"
+# log out and back in, then:
+docker compose -f infra/docker-compose.yml up -d
+```
+
+`./infra/bootstrap.sh` detects this case and refuses to treat the snap as usable.
+
 **Server exits immediately** — check `docker compose logs mc` for a missing-mod error.
 Usually the mirror is incomplete; re-run `sync-mirror.sh` and read its summary.
 
