@@ -61,6 +61,13 @@ services:
       - mc-data:/data
       - ../server/server.properties:/config/server.properties:ro
       - ../server/jvm.args:/config/jvm.args:ro
+    # The pack is fetched from `mirror` during startup, so the mirror must not only
+    # be running but actually serving the manifest. Waiting on its healthcheck rather
+    # than merely on the container turns "mirror is empty" into a clear unhealthy
+    # dependency instead of an opaque packwiz download failure and a crash loop.
+    depends_on:
+      mirror:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "mc-health"]
       # First boot downloads ~400 MB of mods and builds the mod cache; the long
@@ -142,6 +149,15 @@ services:
       - ${MIRROR_ROOT:-/srv/mirror}:/srv/mirror:ro
       - caddy-data:/data
       - caddy-config:/config
+    # Healthy means "actually serving the manifest", not just "Caddy is up" — an empty
+    # or unpopulated MIRROR_ROOT is the common first-run mistake, and this catches it
+    # here rather than as a mod-download failure inside the Minecraft container.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/pack/pack.toml"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   # ---------------------------------------------------------------------------
   # Monitoring
