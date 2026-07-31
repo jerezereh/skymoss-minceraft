@@ -44,9 +44,38 @@ services:
       USE_AIKAR_FLAGS: "false"   # we supply our own in server/jvm.args
       JVM_OPTS: "${MC_JVM_OPTS:-}"
 
-      # Overwrite server.properties from our tracked copy on every boot, so the
-      # repo stays the source of truth rather than drifting from the live file.
+      # --- server.properties -------------------------------------------------
+      # itzg builds /data/server.properties from these env vars on every boot, which
+      # is why they are the source of truth rather than a mounted file. A file
+      # mounted at /config/server.properties is simply ignored, and with
+      # OVERRIDE_SERVER_PROPERTIES=true anything written into /data is replaced with
+      # values derived from here — so unset variables silently become stock defaults.
+      # Keep these in sync with server/server.properties, which documents the why.
       OVERRIDE_SERVER_PROPERTIES: "true"
+
+      LEVEL: "${WORLD_NAME:-FlyMoss}"
+      MOTD: "§aSkymoss §7| §f1.21.1 NeoForge"
+      MAX_PLAYERS: "10"
+      DIFFICULTY: normal
+      MODE: survival
+      PVP: "true"
+      ONLINE_MODE: "true"
+      WHITE_LIST: "true"
+      ENFORCE_WHITELIST: "true"
+      SPAWN_PROTECTION: "0"
+      ENABLE_COMMAND_BLOCK: "true"
+
+      # Load-bearing, not cosmetic:
+      #   ALLOW_FLIGHT  riding a Valkyrien Skies ship or a Create contraption reads as
+      #                 flying to vanilla anticheat; without this players get kicked.
+      #   MAX_TICK_TIME the watchdog kills the server mid-tick during heavy modded
+      #                 chunk generation, which risks corrupting the world.
+      ALLOW_FLIGHT: "true"
+      MAX_TICK_TIME: "-1"
+
+      VIEW_DISTANCE: "8"
+      SIMULATION_DISTANCE: "6"
+      ENFORCE_SECURE_PROFILE: "false"
 
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${RCON_PASSWORD:?set RCON_PASSWORD}"
@@ -58,9 +87,11 @@ services:
       SETUP_ONLY: "false"
       TZ: "${TZ:-America/Los_Angeles}"
     volumes:
+      # No config bind-mounts: itzg reads /data/server.properties, and /config is not
+      # consulted at all. server.properties comes from the env vars above; JVM flags
+      # come from JVM_OPTS. server/*.args and server/server.properties remain in the
+      # repo as the documented reference for those values.
       - mc-data:/data
-      - ../server/server.properties:/config/server.properties:ro
-      - ../server/jvm.args:/config/jvm.args:ro
     # The pack is fetched from `mirror` during startup, so the mirror must not only
     # be running but actually serving the manifest. Waiting on its healthcheck rather
     # than merely on the container turns "mirror is empty" into a clear unhealthy
