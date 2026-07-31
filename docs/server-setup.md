@@ -200,9 +200,57 @@ Run it from a phone hotspot or another machine off your network.
 
 Players connect to `skymoss.duckdns.org`. No port needed — 25565 is the default.
 
-> Your home IP becomes visible to anyone who joins. That's inherent to port
-> forwarding. The whitelist is enforced and `online-mode` is on, so only accounts you
-> add can connect, but the address itself isn't a secret.
+### What forwarding a port actually exposes
+
+Worth being precise, because "it's just one port" undersells it.
+
+The NAT rule is narrow — TCP 25565 to one host, one port. Nobody reaches your NAS,
+your router admin page, or any other machine through it. But what sits behind that
+port is a **Java application running 200+ third-party mods**, now reachable by anyone
+on the internet.
+
+**The whitelist does not gate the attack surface.** It blocks *joining*. The TCP
+handshake, protocol negotiation, and login-start packets are all parsed **before**
+that check, so any parsing bug in Minecraft or in a mod is reachable pre-auth by a
+stranger. Log4Shell is the well-known example; mod-specific RCEs have happened too.
+
+Also true, and unavoidable with this approach:
+
+- **You will be scanned.** Shodan and Censys sweep 25565 continuously; expect bot
+  probes within hours of opening it.
+- **A compromise lands inside your LAN.** A container is isolation, not a security
+  boundary.
+- **DDoS takes out your household**, not just the server.
+- **Your home IP is public** to anyone who joins.
+
+A relay like playit hides your IP and absorbs DDoS, but **does not shrink the attack
+surface** — anyone with the address still reaches the same server. Only restricting
+*who can reach the port at all* (Tailscale, or an IP allowlist) does that.
+
+### What the stack does about it
+
+- `online-mode=true` — Mojang authentication required; cracked clients can't connect
+- `white-list=true` + `enforce-whitelist=true` — only listed accounts join
+- The server process runs as UID 1000, not root
+- `no-new-privileges` on every container
+- **Network segmentation** — `mc` sits on `game` and `packnet` only. It has no route
+  to `duckdns`, so a compromised game server cannot reach the DuckDNS token and
+  repoint your hostname. `mirror` is on an `internal` network with no egress at all.
+- `pids_limit` caps fork bombs from an exploited mod
+- The bridge drops all capabilities; its endpoints are HMAC- or bearer-authenticated
+
+`mc` and `bridge` still share `game`, because the bridge initiates RCON to the server
+and Docker networks are bidirectional. That's why every bridge endpoint requires a
+signature or token rather than trusting the network.
+
+### Keeping it that way
+
+- **Update mods.** Most of your risk is third-party code. `node tools/check-urls.ts`
+  and `packwiz update` surface what's stale.
+- **Keep the whitelist tight.** Remove people who've stopped playing.
+- **Watch for oddities** — repeated connections from unknown IPs in the log are worth
+  a look. This is what the log-to-issues automation is for.
+- **Don't reuse `RCON_PASSWORD`** anywhere else; RCON is a full console.
 
 ### playit.gg (fallback, only if you end up behind CGNAT)
 

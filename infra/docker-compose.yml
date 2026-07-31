@@ -26,6 +26,21 @@ services:
     stdin_open: true
     ports:
       - "25565:25565"
+    # This is the one service reachable from the public internet, so it is also the
+    # one most worth constraining. Whitelisting blocks *joining*, but the TCP
+    # handshake and login-start packets are parsed before that check — meaning 200+
+    # third-party mods process bytes from unauthenticated strangers.
+    #
+    # Capabilities are deliberately NOT dropped: itzg's entrypoint chowns /data and
+    # steps down to UID 1000, which needs CHOWN/SETUID/SETGID. Dropping them breaks
+    # startup.
+    security_opt:
+      - no-new-privileges:true
+    # A fork bomb from an exploited mod shouldn't be able to take the host down.
+    pids_limit: 512
+    networks:
+      - game
+      - packnet
     environment:
       EULA: "TRUE"
       TYPE: NEOFORGE
@@ -153,6 +168,18 @@ services:
       ADMIN_ROLE_ID: "${ADMIN_ROLE_ID:-}"
     volumes:
       - bridge-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    # On `game` only because it initiates RCON to mc. Docker networks are
+    # bidirectional, so mc can still reach this container's port — every endpoint is
+    # HMAC- or bearer-authenticated for that reason. Being off `admin` keeps a
+    # compromised game server away from Uptime Kuma and the DDNS credentials.
+    networks:
+      - game
+      - admin
     depends_on:
       - mc
     healthcheck:
@@ -177,6 +204,12 @@ services:
       - ${MIRROR_ROOT:-/srv/mirror}:/srv/mirror:ro
       - caddy-data:/data
       - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+    # Serves read-only static files on an internal network; it never needs to reach
+    # anything else, and `packnet` is marked internal so it has no route out.
+    networks:
+      - packnet
     # Healthy means "actually serving the manifest", not just "Caddy is up" — an empty
     # or unpopulated MIRROR_ROOT is the common first-run mistake, and this catches it
     # here rather than as a mod-download failure inside the Minecraft container.
@@ -208,6 +241,14 @@ services:
       - "127.0.0.1:3001:3001"
     volumes:
       - uptime-kuma-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - admin
+      # Needs to reach mc:25565 and mirror to monitor them, but nothing needs to
+      # reach it — it is bound to loopback on the host.
+      - game
+      - packnet
     depends_on:
       - bridge
 
@@ -234,6 +275,12 @@ services:
       UPDATE_IP: ipv4
       LOG_FILE: "false"
       TZ: "${TZ:-America/Los_Angeles}"
+    security_opt:
+      - no-new-privileges:true
+    # Holds the DuckDNS token, which can repoint your hostname. Isolated from the
+    # internet-facing game server for that reason.
+    networks:
+      - admin
 
   # ---------------------------------------------------------------------------
   # playit.gg tunnel (optional fallback)
@@ -294,6 +341,20 @@ services:
       - mirror
       - bridge
       - uptime-kuma
+
+networks:
+  # The internet-facing game server lives here. Kept separate so a compromised
+  # Minecraft server — the only thing strangers can send packets to — cannot reach
+  # the containers holding GitHub, Discord, and DuckDNS credentials.
+  game:
+
+  # Manifest distribution. `internal` means no route to the internet at all: the
+  # mirror only ever serves local static files, so it has no reason to egress.
+  packnet:
+    internal: true
+
+  # Credential-holding services.
+  admin:
 
 volumes:
   mc-data:
