@@ -1,6 +1,15 @@
+# side forced to "client": Modrinth reports client_side=optional / server_side=optional,
+# which our importer maps to "both" as the safe default. On a dedicated server it is
+# not merely unused, it is fatal — it mixes into NeoForge's ModDiscoverer and calls
+# org.apache.commons.compress.utils.Lists, a class removed in commons-compress 1.26+,
+# so mod discovery dies with NoClassDefFoundError before the server ever starts.
+#
+# Safe to exclude: it is a developer tool for early loader access, and nothing in this
+# pack declares a dependency on it in either neoforge.mods.toml or fabric.mod.json.
+# 3.7.3 is already the newest 1.21.1 NeoForge build, so there is no upgrade to take.
 name = "Preloading Tricks"
 filename = "preloading-tricks-3.7.3.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/FFeAJNCx/versions/2XxN0NBv/preloading-tricks-3.7.3.jar"

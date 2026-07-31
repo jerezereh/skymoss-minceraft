@@ -2615,7 +2615,7 @@ metafile = true
 
 [[files]]
 file = "mods/preloading-tricks.pw.toml"
-hash = "47df56151edc42973e345aded790f8e47118911ef4011bcc5c3003dd9a254ffb"
+hash = "00eab213dca144fa756a8e595f37812e13346ffd42310ce4da17e001f281208c"
 metafile = true
 
 [[files]]
