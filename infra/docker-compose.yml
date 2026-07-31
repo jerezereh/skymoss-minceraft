@@ -218,17 +218,38 @@ services:
   # only proxies arbitrary TCP on the Enterprise-tier Spectrum product. The usual
   # workaround requires every player to run `cloudflared access tcp` locally.
   #
-  # playit.gg tunnels TCP directly, runs only on this host, works behind CGNAT, and
-  # gives players a plain address to type. Nothing to install on their side.
+  # This host is NOT behind CGNAT (playit reported client_addr 184.3.244.235, a
+  # routable address), so port-forwarding TCP 25565 on the router is available and
+  # removes the relay from the path entirely. duckdns keeps a stable hostname
+  # pointed at the WAN address so players have a name rather than a changing IP.
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: skymoss-duckdns
+    restart: unless-stopped
+    environment:
+      SUBDOMAINS: "${DUCKDNS_SUBDOMAIN:?set DUCKDNS_SUBDOMAIN}"
+      TOKEN: "${DUCKDNS_TOKEN:?set DUCKDNS_TOKEN}"
+      # IPv4 only: this host has no IPv6 route, and publishing a AAAA record that
+      # nothing can reach makes clients hang before falling back.
+      UPDATE_IP: ipv4
+      LOG_FILE: "false"
+      TZ: "${TZ:-America/Los_Angeles}"
+
+  # ---------------------------------------------------------------------------
+  # playit.gg tunnel (optional fallback)
+  # ---------------------------------------------------------------------------
+  # Kept for hosts that ARE behind CGNAT, where port forwarding is impossible.
+  # Opt in with:  docker compose --profile playit up -d
   #
-  # SECRET_KEY must be generated on the web FIRST — unlike the native binary, the
-  # container has no interactive claim flow:
-  #   https://playit.gg/account/setup/wizard/new-account/docker/docker-name
-  #
-  # An empty SECRET_KEY is not treated as "unclaimed"; the agent reads it as an
-  # invalid credential, exits, and this service crash-loops. Leave PLAYIT_SECRET_KEY
-  # unset and simply don't start this service until you have a key.
+  # Two traps, both hit during setup:
+  #   - SECRET_KEY must be generated on the web first; the container has no
+  #     interactive claim flow (the native binary does). An empty value is read as a
+  #     bad credential, not as "unclaimed", and the service crash-loops.
+  #     https://playit.gg/account/setup/wizard/new-account/docker/docker-name
+  #   - 1.0.10 / :latest cannot fall back from IPv6 to IPv4 (upstream #194), so on an
+  #     IPv4-only host the relay accepts players and resets them.
   playit:
+    profiles: [playit]
     # Pinned, and deliberately NOT :latest.
     #
     # 1.0.10 (== :latest) is broken on IPv4-only hosts: the address selector picks an

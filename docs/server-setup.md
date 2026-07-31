@@ -161,34 +161,78 @@ means every player installs software before they can join.
 The tunnel is still the right tool for the mirror and the bridge. It just can't carry
 players.
 
-### playit.gg (what this stack uses)
+### Port forward + DuckDNS (what this stack uses)
 
-Included in the compose file. Free tier covers 3 tunnels, works behind CGNAT with no
-port forwarding, and runs **only on this host** — players just type an address.
+This host has a **routable WAN address, not CGNAT** — confirmed from playit's own
+`client_addr` report. So the simplest path works: forward the port, give it a name.
+
+**1. Get a free hostname.** Sign in at <https://www.duckdns.org>, create a subdomain,
+and copy the token from the top of the page. Put both in `infra/.env`:
+
+```
+DUCKDNS_SUBDOMAIN=skymoss
+DUCKDNS_TOKEN=<token>
+```
+
+The `duckdns` service keeps it pointed at your current WAN address, so a change from
+your ISP doesn't strand players.
+
+**2. Forward the port on your router.** Exactly one rule:
+
+| | |
+|---|---|
+| Protocol | **TCP** |
+| External port | 25565 |
+| Internal IP | this server's LAN address (`ip -4 addr show` / `hostname -I`) |
+| Internal port | 25565 |
+
+Give the server a **DHCP reservation** or static LAN IP while you're in there —
+otherwise the forward breaks the next time its address changes.
+
+**3. Verify from outside your network.** A test from inside can succeed via LAN and
+tell you nothing about whether the forward works:
+
+```bash
+docker run --rm itzg/mc-monitor status --host skymoss.duckdns.org --port 25565
+```
+
+Run it from a phone hotspot or another machine off your network.
+
+Players connect to `skymoss.duckdns.org`. No port needed — 25565 is the default.
+
+> Your home IP becomes visible to anyone who joins. That's inherent to port
+> forwarding. The whitelist is enforced and `online-mode` is on, so only accounts you
+> add can connect, but the address itself isn't a secret.
+
+### playit.gg (fallback, only if you end up behind CGNAT)
+
+Only needed if your ISP puts you behind CGNAT, where port forwarding is impossible.
+Check by comparing `curl -s ifconfig.me` against your router's WAN address — if they
+differ, or the WAN address is in `100.64.0.0/10`, you're behind CGNAT.
+
+Not started by default:
+
+```bash
+docker compose --profile playit up -d
+```
 
 **Generate the secret first.** The Docker agent has no interactive claim flow — that's
-the native binary's behaviour, not the container's. Get a key at:
+the native binary's behaviour, not the container's. Get a key at
+<https://playit.gg/account/setup/wizard/new-account/docker/docker-name>, put it in
+`PLAYIT_SECRET_KEY`, then create a **Minecraft Java** tunnel in the dashboard pointing
+at `127.0.0.1:25565`.
 
-<https://playit.gg/account/setup/wizard/new-account/docker/docker-name>
+Two traps, both hit during setup here:
 
-Then:
-
-```bash
-# in infra/.env
-PLAYIT_SECRET_KEY=<the key>
-```
-```bash
-docker compose up -d playit
-docker compose logs -f playit     # should report the tunnel established
-```
-
-Finally, in the playit dashboard create a **Minecraft Java** tunnel pointing at
-`127.0.0.1:25565`.
-
-> Don't start this service with `PLAYIT_SECRET_KEY` empty. An empty value isn't read
-> as "unclaimed" — the agent treats it as a bad credential, exits, and the container
-> crash-loops. Bring the rest up on its own until you have a key:
-> `docker compose up -d mc mirror bridge uptime-kuma`
+- **An empty `PLAYIT_SECRET_KEY` is not "unclaimed."** The agent reads it as a bad
+  credential, exits, and the container crash-loops.
+- **1.0.10 and `:latest` are broken on IPv4-only hosts.** The agent selects an IPv6
+  tunnel server, gets `NetworkUnreachable`, and never falls back
+  ([upstream #194](https://github.com/playit-cloud/playit-agent/issues/194), open).
+  The control session flaps with `SessionNotSetup`, so the relay accepts players and
+  immediately resets them — while the dashboard shows the tunnel happily online.
+  `PLAYIT_AGENT_VERSION=1.0.8` (or `1.0.7`) predates that code. Never drop to 0.x;
+  that line cannot authenticate at all.
 
 You'll get an address like `skymoss.at.ply.gg:7261`. That's what players enter —
 pin it in Discord. A custom domain is a paid feature; the free address is stable.
