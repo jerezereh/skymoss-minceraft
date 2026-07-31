@@ -68,7 +68,17 @@ ARCHIVE="$STAGING/${STAMP}.tar.zst"
 
 log "archiving $WORLD_PATH -> $ARCHIVE"
 # session.lock is per-run server state and would be stale on restore.
-tar --exclude='session.lock' -I 'zstd -19 -T0' -cf "$ARCHIVE" -C "$(dirname "$WORLD_PATH")" "$(basename "$WORLD_PATH")"
+#
+# DistantHorizons.sqlite is a regenerable LOD render cache. In the original FlyMoss
+# world it was 1.5 GB against 370 MB of actual terrain — excluding it is the
+# difference between a snapshot that fits in GitHub's LFS free tier and one that
+# does not. Region files are already zlib-compressed internally, so compression
+# does not rescue you here.
+tar --exclude='session.lock' \
+    --exclude='DistantHorizons.sqlite' \
+    --exclude='DistantHorizons.sqlite-shm' \
+    --exclude='DistantHorizons.sqlite-wal' \
+    -I 'zstd -19 -T0' -cf "$ARCHIVE" -C "$(dirname "$WORLD_PATH")" "$(basename "$WORLD_PATH")"
 
 restore_saving
 if [[ "$SERVER_RUNNING" == "1" ]]; then

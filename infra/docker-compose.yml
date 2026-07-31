@@ -157,9 +157,13 @@ services:
       RCON_PORT: "25575"
       RCON_PASSWORD: "${RCON_PASSWORD:?set RCON_PASSWORD}"
 
-      # session.lock is per-run state and is stale on restore; the caches are
-      # regenerated and only bloat the archive.
-      EXCLUDES: "*.jar,cache,logs,crash-reports,session.lock"
+      # session.lock is per-run state and stale on restore; caches are regenerated.
+      #
+      # DistantHorizons.sqlite is the big one: a regenerable LOD render cache that
+      # was 1.5 GB in the original FlyMoss world — roughly 80% of the save, and
+      # four times the size of the actual terrain. Backing it up would turn a
+      # ~370 MB snapshot into a ~1.8 GB one for data the client rebuilds anyway.
+      EXCLUDES: "*.jar,cache,logs,crash-reports,session.lock,DistantHorizons.sqlite*"
       BACKUP_METHOD: tar
       TZ: "${TZ:-America/Los_Angeles}"
     volumes:
