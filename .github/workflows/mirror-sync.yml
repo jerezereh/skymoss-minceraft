@@ -7,13 +7,11 @@ name: Sync mirror
 # label `skymoss` (see docs/server-setup.md § Self-hosted runner). Until then, run
 # tools/sync-mirror.sh on the box by hand.
 
+# Manual only. A `push` trigger would queue a job on every pack change and sit there
+# indefinitely — a self-hosted runner is required, and jobs waiting for a label that
+# no runner offers never fail, they just accumulate. Re-add the push trigger once a
+# runner with the `skymoss` label is registered on the host.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'pack/mods/**'
-      - 'pack/pack.toml'
-      - 'pack/index.toml'
   workflow_dispatch:
     inputs:
       jar_dir:
