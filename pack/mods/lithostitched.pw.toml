@@ -1,6 +1,13 @@
+# side forced to "both". Modrinth reports client_side=unsupported, which the importer
+# mapped to "server" — accurate for whether the mod does anything useful alone on a
+# client, but wrong for multiplayer. NeoForge compares mod lists on connect, so a mod
+# present only on the server gets players rejected with "lithostitched is missing".
+#
+# It is also genuinely needed client-side for singleplayer, where the integrated
+# server runs worldgen. Harmless to install on a client either way.
 name = "Lithostitched"
 filename = "lithostitched-1.7.13-neoforge-21.1.jar"
-side = "server"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/XaDC71GB/versions/qPASucBM/lithostitched-1.7.13-neoforge-21.1.jar"

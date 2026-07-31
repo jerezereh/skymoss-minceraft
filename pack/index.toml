@@ -2470,7 +2470,7 @@ metafile = true
 
 [[files]]
 file = "mods/lithostitched.pw.toml"
-hash = "f0c66fc8c3d9dbea2704b007e79125377d50484ff3a40c280b48707659209045"
+hash = "2b69ff92044a4daa51487141fe3be2b3cb943ff17709f26c74f4cdf2d20b76e9"
 metafile = true
 
 [[files]]
@@ -2690,7 +2690,7 @@ metafile = true
 
 [[files]]
 file = "mods/sable--create-aeronautics--collision-damage.pw.toml"
-hash = "30a253257b9953a141b11a002a8ffc6ea75841090e58ecd382b1cdd9114e07f7"
+hash = "d6f978f8b57c922c55e237d0ac61cb70317786060fdae3b3d75c7544f8dd1e56"
 metafile = true
 
 [[files]]

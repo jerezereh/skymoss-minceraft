@@ -1,12 +1,12 @@
 name = "Skymoss"
 author = "jerezereh"
-version = "0.1.0"
+version = "0.1.1"
 pack-format = "packwiz:1.1.0"
 
 [index]
 file = "index.toml"
 hash-format = "sha256"
-hash = "ad20e6a713d622f7e431f3c3e3ef2f1c137ae3f71f386373865818743fd626c2"
+hash = "51a6c46fc7400617d3ba5af8f09fe482b25dcd69f4b6847e12e8b703a52e6fd2"
 
 [versions]
 minecraft = "1.21.1"
