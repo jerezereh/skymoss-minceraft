@@ -91,7 +91,7 @@ Three mods exist nowhere upstream — they're bespoke fixes for bugs in the curr
 
 ### Hosting
 
-They're served from the **`orphan-mods-v1` GitHub release** on this repo, not the
+They're served from the **`custom-fixes-v1` GitHub release** on this repo, not the
 mirror. That's deliberate:
 
 - All three are our own work under CC0/MIT, so redistribution is explicitly fine —
@@ -103,15 +103,23 @@ mirror. That's deliberate:
 Create the release once:
 
 ```bash
-gh release create orphan-mods-v1 \
+gh release create custom-fixes-v1 \
   KPEnchantFix-neoforge-mod.jar kp_slot_fix-1.0.0.jar vpsunshade-1.0.0.jar \
-  --title "Orphan mods v1" \
+  --title "Custom fixes v1" \
   --notes "Bespoke fixes with no upstream source. Referenced by pack/mods/*.pw.toml."
 ```
 
-If you ever rebuild one, publish it under a **new tag** (`orphan-mods-v2`) rather than
+**The tag must not start with `v`.** `release.yml` triggers on `push: tags: ['v*']`, so
+a tag like `v1.0.0` fires the pack release workflow and dumps a `.mrpack` and server
+tarball into the same release as these jars. Keep custom-fix releases on
+`custom-fixes-*`; `v*` belongs to pack releases.
+
+If you ever rebuild one, publish it under a **new tag** (`custom-fixes-v2`) rather than
 replacing the asset — the hash in the metafile pins the exact bytes, so overwriting an
 asset in place breaks installs with a hash mismatch.
+
+Renaming or deleting the tag has the same effect: every URL 404s, packwiz aborts, and
+the server crash-loops on startup with no obvious pointer to the cause.
 
 ### Why all three are `side = "both"`
 

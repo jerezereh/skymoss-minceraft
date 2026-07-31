@@ -11,12 +11,12 @@
 # NOTE: this replaces the three vanilla enchantment files outright rather than merging,
 # so it is a frozen copy of their 1.21.1 definitions. It must be re-synced by hand if
 # the pack ever moves to a newer Minecraft version.
-# Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
+# Requires the `custom-fixes-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
 name = "Kitchen Projectiles Enchantment Fix"
 filename = "KPEnchantFix-neoforge-mod.jar"
 side = "both"
 
 [download]
-url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/orphan-mods-v1/KPEnchantFix-neoforge-mod.jar"
+url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/custom-fixes-v1/KPEnchantFix-neoforge-mod.jar"
 hash-format = "sha512"
 hash = "31070354e35a4f38c7f9418d1a828232c13529f896de7118b3c63094f4e6bf2917befcd0200653272d762e353fd3fbaecb528eabbfd6bad8eafc46b2f802b44d"

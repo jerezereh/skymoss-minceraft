@@ -5,12 +5,12 @@
 # side = "both", verified: no net/minecraft/client references; it hooks
 # EntityJoinLevelEvent and rewrites an Inventory slot, which is server-authoritative.
 # Kept "both" so the client's integrated server has it in singleplayer and LAN.
-# Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
+# Requires the `custom-fixes-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
 name = "Kitchen Projectiles Slot Fix"
 filename = "kp_slot_fix-1.0.0.jar"
 side = "both"
 
 [download]
-url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/orphan-mods-v1/kp_slot_fix-1.0.0.jar"
+url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/custom-fixes-v1/kp_slot_fix-1.0.0.jar"
 hash-format = "sha512"
 hash = "2abdeb85ee1e1f7aa43d2e779ba27b9edf95f95ef0fccb44df120f807d0b513e6f9b8e06ba1f98905af12ff67d0b12f9ca975d0b3cbb479fef0800c83e5274d6"

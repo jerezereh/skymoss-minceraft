@@ -8,12 +8,12 @@
 # server-side logic. It stays "both" anyway because packwiz's "server" excludes the
 # client entirely, and the client's integrated server needs this for singleplayer and
 # LAN worlds. Harmless on a multiplayer client — it contains no client code.
-# Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
+# Requires the `custom-fixes-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
 name = "VP Sunshade"
 filename = "vpsunshade-1.0.0.jar"
 side = "both"
 
 [download]
-url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/orphan-mods-v1/vpsunshade-1.0.0.jar"
+url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/custom-fixes-v1/vpsunshade-1.0.0.jar"
 hash-format = "sha512"
 hash = "fdf26cb55200cd02184d7445f2dc23eb9ed492cc4f393a64ce1bcabee1197fac7a2166b25bc1d59be309714a8ee7465b19c0e58ca8b8bab65d9716fb0ddbde00"
