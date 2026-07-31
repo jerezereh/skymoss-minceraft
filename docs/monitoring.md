@@ -108,6 +108,77 @@ root-equivalent control of the host. Instead `/restart` sends `save-all flush` t
 A useful side effect: an admin restart and a crash-restart follow exactly the same
 path, so there's only one recovery behaviour to reason about.
 
+## Backups, restarts, and logs
+
+Three separate concerns, deliberately handled by three different mechanisms.
+
+### Frequent backups — `mc-backup` sidecar
+
+Runs with the stack. Hourly `tar` backups to `BACKUP_DIR` (default
+`/srv/skymoss-backups`), pruned after 7 days, skipped entirely when nobody is
+online. It coordinates `save-off` / `save-all` / `save-on` over RCON itself, so a
+backup can never catch a half-written region file.
+
+The world volume is mounted **read-only** — a backup tool has no business writing
+to the world.
+
+```bash
+ls -lht /srv/skymoss-backups | head
+docker compose -f infra/docker-compose.yml logs mc-backup | tail -20
+```
+
+Restore: stop `mc`, extract the tar over the world volume, start it. Keep the old
+world directory until you've confirmed the restore is good.
+
+### Milestone snapshots — weekly, to `skymoss-worlds`
+
+`infra/backup/snapshot-world.sh` compresses the world and commits it to the worlds
+repo through Git LFS. This is the offsite, durable, shareable history — the local
+backups above don't survive the box dying.
+
+```bash
+sudo cp infra/systemd/skymoss-snapshot.* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now skymoss-snapshot.timer
+```
+
+Weekly rather than daily on purpose: a snapshot is ~220 MB, and GitHub LFS gives
+1 GB free before it starts costing money. Daily would be ~6.5 GB/month.
+
+### Nightly restart
+
+Modded servers leak memory and accumulate entity and chunk cruft. `restart-server.sh`
+warns at 15/5/1 minutes, flushes the world, then asks the server to **stop** —
+Docker's restart policy brings it back, so an admin restart and a crash-restart take
+the same path. If nobody is online it skips the countdown.
+
+```bash
+sudo cp infra/systemd/skymoss-restart.* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now skymoss-restart.timer
+systemctl list-timers 'skymoss-*'
+```
+
+The timer fires at **04:45** so the countdown *ends* at 05:00.
+
+Run it by hand any time: `./infra/restart-server.sh` (or `--now` to skip warnings).
+
+### Log rotation
+
+Docker's default `json-file` driver has **no size cap**. A 200-mod server is chatty
+enough to fill `/var/lib/docker` and wedge the host, and the failure presents as
+"everything broke at once" rather than anything log-shaped. Every service now caps at
+10 MB × 3 files.
+
+Existing containers keep their old unbounded logs until recreated:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d --force-recreate
+du -sh /var/lib/docker/containers/*/*-json.log | sort -rh | head -5
+```
+
+Minecraft's own `logs/` directory is rotated by log4j and needs nothing.
+
 ## What you get where
 
 | | Source |

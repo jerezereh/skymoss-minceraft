@@ -1,0 +1,13 @@
+[Unit]
+Description=Skymoss weekly world snapshot to skymoss-worlds
+Documentation=https://github.com/jerezereh/skymoss-minceraft/blob/main/docs/monitoring.md
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=WORLDS_CHECKOUT=/srv/skymoss-worlds
+Environment=PACK_TOML=/srv/skymoss-minceraft/pack/pack.toml
+ExecStart=/srv/skymoss-minceraft/infra/backup/snapshot-world.sh weekly
+# Compressing ~220 MB with zstd -19 and pushing through LFS is not fast.
+TimeoutStartSec=60min

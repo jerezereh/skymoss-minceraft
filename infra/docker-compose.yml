@@ -14,6 +14,16 @@
 
 name: skymoss
 
+# Docker's default json-file driver has NO size cap. A 200-mod server is chatty
+# enough to fill /var/lib/docker and wedge the host within weeks, and the failure
+# looks like "everything broke at once" rather than anything log-related. Every
+# service inherits this.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # ---------------------------------------------------------------------------
   # Minecraft dedicated server
@@ -21,6 +31,7 @@ services:
   mc:
     image: itzg/minecraft-server:java21
     container_name: skymoss-mc
+    logging: *default-logging
     restart: unless-stopped
     tty: true
     stdin_open: true
@@ -122,12 +133,54 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
+  # Frequent local backups
+  # ---------------------------------------------------------------------------
+  # Two different jobs, deliberately not merged:
+  #   this service        hourly, local, pruned — "a creeper ate the base an hour ago"
+  #   snapshot-world.sh   weekly, LFS, offsite  — durable history you can point at
+  #
+  # It coordinates save-off / save-all / save-on over RCON itself, so a backup can
+  # never catch a half-written region file. PAUSE_IF_NO_PLAYERS stops it archiving
+  # an idle world over and over.
+  mc-backup:
+    image: itzg/mc-backup:latest
+    container_name: skymoss-backup
+    logging: *default-logging
+    restart: unless-stopped
+    environment:
+      BACKUP_INTERVAL: "${BACKUP_INTERVAL:-1h}"
+      INITIAL_DELAY: "5m"
+      PRUNE_BACKUPS_DAYS: "${BACKUP_PRUNE_DAYS:-7}"
+      PAUSE_IF_NO_PLAYERS: "true"
+
+      RCON_HOST: mc
+      RCON_PORT: "25575"
+      RCON_PASSWORD: "${RCON_PASSWORD:?set RCON_PASSWORD}"
+
+      # session.lock is per-run state and is stale on restore; the caches are
+      # regenerated and only bloat the archive.
+      EXCLUDES: "*.jar,cache,logs,crash-reports,session.lock"
+      BACKUP_METHOD: tar
+      TZ: "${TZ:-America/Los_Angeles}"
+    volumes:
+      # Read-only: a backup tool has no business writing to the world.
+      - mc-data:/data:ro
+      - ${BACKUP_DIR:-/srv/skymoss-backups}:/backups
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - game
+    depends_on:
+      - mc
+
+  # ---------------------------------------------------------------------------
   # Discord <-> GitHub bridge
   # ---------------------------------------------------------------------------
   bridge:
     build:
       context: ../bridge
     container_name: skymoss-bridge
+    logging: *default-logging
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -198,6 +251,7 @@ services:
   mirror:
     image: caddy:2-alpine
     container_name: skymoss-mirror
+    logging: *default-logging
     restart: unless-stopped
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
@@ -234,6 +288,7 @@ services:
   uptime-kuma:
     image: louislam/uptime-kuma:1
     container_name: skymoss-uptime
+    logging: *default-logging
     restart: unless-stopped
     # Bound to loopback, not 0.0.0.0: this is an admin UI with no domain in front of
     # it. Reach it over SSH (`ssh -L 3001:localhost:3001 host`) or your tailnet.
@@ -266,6 +321,7 @@ services:
   duckdns:
     image: lscr.io/linuxserver/duckdns:latest
     container_name: skymoss-duckdns
+    logging: *default-logging
     restart: unless-stopped
     environment:
       SUBDOMAINS: "${DUCKDNS_SUBDOMAIN:?set DUCKDNS_SUBDOMAIN}"
@@ -310,6 +366,7 @@ services:
     # If 1.0.8 still fails, ladder down via PLAYIT_AGENT_VERSION: 1.0.7, then 1.0.6.
     image: ghcr.io/playit-cloud/playit-agent:${PLAYIT_AGENT_VERSION:-1.0.8}
     container_name: skymoss-playit
+    logging: *default-logging
     restart: unless-stopped
     # Host networking so the agent can reach the published Minecraft port on
     # 127.0.0.1 and dial out to playit's relays.
@@ -332,6 +389,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: skymoss-tunnel
+    logging: *default-logging
     restart: unless-stopped
     profiles: [tunnel]
     command: tunnel --no-autoupdate run

@@ -1,0 +1,12 @@
+[Unit]
+Description=Skymoss nightly server restart
+Documentation=https://github.com/jerezereh/skymoss-minceraft/blob/main/docs/monitoring.md
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/srv/skymoss-minceraft/infra/restart-server.sh
+# The countdown itself takes ~15 minutes; allow headroom so systemd never kills
+# the script mid-warning and leaves players expecting a restart that never comes.
+TimeoutStartSec=30min

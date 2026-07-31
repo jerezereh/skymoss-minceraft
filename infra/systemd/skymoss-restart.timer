@@ -1,0 +1,14 @@
+[Unit]
+Description=Run the Skymoss restart nightly
+
+[Timer]
+# 04:45 so the 15-minute countdown ends at 05:00 rather than starting then.
+OnCalendar=*-*-* 04:45:00
+# If the host was asleep or off at the scheduled time, run once on next boot
+# rather than silently skipping until tomorrow.
+Persistent=true
+# Spread the load a little; nothing here needs to be punctual to the second.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target
