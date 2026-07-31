@@ -166,15 +166,29 @@ players.
 Included in the compose file. Free tier covers 3 tunnels, works behind CGNAT with no
 port forwarding, and runs **only on this host** — players just type an address.
 
+**Generate the secret first.** The Docker agent has no interactive claim flow — that's
+the native binary's behaviour, not the container's. Get a key at:
+
+<https://playit.gg/account/setup/wizard/new-account/docker/docker-name>
+
+Then:
+
+```bash
+# in infra/.env
+PLAYIT_SECRET_KEY=<the key>
+```
 ```bash
 docker compose up -d playit
-docker compose logs playit        # prints a claim URL on first run
+docker compose logs -f playit     # should report the tunnel established
 ```
 
-Open the claim URL, approve the agent, then in the playit dashboard create a
-**Minecraft Java** tunnel pointing at `127.0.0.1:25565`. Copy the generated secret
-into `PLAYIT_SECRET_KEY` in `.env` and restart so it persists across container
-recreation.
+Finally, in the playit dashboard create a **Minecraft Java** tunnel pointing at
+`127.0.0.1:25565`.
+
+> Don't start this service with `PLAYIT_SECRET_KEY` empty. An empty value isn't read
+> as "unclaimed" — the agent treats it as a bad credential, exits, and the container
+> crash-loops. Bring the rest up on its own until you have a key:
+> `docker compose up -d mc mirror bridge uptime-kuma`
 
 You'll get an address like `skymoss.at.ply.gg:7261`. That's what players enter —
 pin it in Discord. A custom domain is a paid feature; the free address is stable.
