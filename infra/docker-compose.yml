@@ -229,12 +229,18 @@ services:
   # invalid credential, exits, and this service crash-loops. Leave PLAYIT_SECRET_KEY
   # unset and simply don't start this service until you have a key.
   playit:
-    # Pin the current release line. Tag 0.15 is a years-old build that cannot
-    # authenticate against today's playit backend — the agent starts, never connects,
-    # and the tunnel stays offline while the setup wizard's own `docker run ... :latest`
-    # works fine. 1.0.10 and :latest are the same digest today; pinning keeps a
-    # silent upstream change from breaking player ingress.
-    image: ghcr.io/playit-cloud/playit-agent:1.0.10
+    # Pinned, and deliberately NOT :latest.
+    #
+    # 1.0.10 (== :latest) is broken on IPv4-only hosts: the address selector picks an
+    # IPv6 tunnel server, gets NetworkUnreachable, and never falls back to IPv4. The
+    # control session then flaps with SessionNotSetup, so the relay accepts players
+    # and immediately resets them — upstream issue playit-cloud/playit-agent#194,
+    # still open. address_selector.rs last changed 2026-06-07, which ships in 1.0.9
+    # and 1.0.10; 1.0.8 predates it and stays on the v1 protocol, so the same secret
+    # keeps working. (Do not drop to 0.x — that line cannot authenticate at all.)
+    #
+    # If 1.0.8 still fails, ladder down via PLAYIT_AGENT_VERSION: 1.0.7, then 1.0.6.
+    image: ghcr.io/playit-cloud/playit-agent:${PLAYIT_AGENT_VERSION:-1.0.8}
     container_name: skymoss-playit
     restart: unless-stopped
     # Host networking so the agent can reach the published Minecraft port on
