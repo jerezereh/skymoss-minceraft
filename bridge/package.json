@@ -1,0 +1,31 @@
+{
+  "name": "skymoss-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Two-way Discord <-> GitHub relay for Skymoss issues and CI events",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "dev": "node --watch --experimental-strip-types src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.2",
+    "@octokit/webhooks": "^13.4.1",
+    "better-sqlite3": "^11.5.0",
+    "discord.js": "^14.16.3",
+    "fastify": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.10.0": true
+  }
+}

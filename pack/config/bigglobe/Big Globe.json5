@@ -1,0 +1,226 @@
+{
+
+	//Controls the world type which is selected by default when creating a world.
+	//If the provided world type is malformed or unknown to the game, minecraft:normal will be used instead.
+	//This config option can be useful if you like to create lots of worlds of the same type, or you're making a modpack.
+	"Default World Type": "bigglobe:bigglobe",
+
+	//If true, Big Globe will sanity check that the height of each dimension matches that of the chunk generator assigned to that dimension.
+	//If false, Big Globe will assume that any discrepancies are intentional.
+	//This config option only applies to dimensions with scripted chunk generators because some vanilla dimensions fail this check. This check can be useful for finding broken data packs or mods that modify the world height in unsafe ways, and can even prevent world corruption.
+	"Sanity Check World Height": true,
+
+	//If true, saplings will grow into Big Globe trees in Big Globe worlds.
+	//If false, saplings will grow into normal (vanilla) trees in Big Globe worlds.
+	//This config option has no effect on trees that spawn during worldgen.
+	"Big Globe Trees In Big Globe Worlds": true,
+
+	//If true, waypoints will be usable.
+	//If false, waypoints cannot be used.
+	//The hyperspace dimension is a fast travel mechanic which allows players to quickly visit places they've been to before. This config option is provided for players who don't like fast travel or prefer a different mod's teleportation mechanics.
+	"Hyperspace Enabled": true,
+
+	//Global multiplier for how much ore you get from pouring water on molten rock.
+	//If this is set to 0, you will only get stone from this process.
+	//Molten rock can be found in the core at the bottom of the world. It is very difficult to get to, and very rewarding for the resources it grants. Nevertheless, this config option exists for people who think this system is overpowered.
+	"Molten Rock Ore-ification Chance": 1.0,
+
+	//Number of threads to use for worldgen tasks (including worldgen for Distant Horizons and Voxy)
+	//More threads will result in faster terrain gen, but may reduce performance in other areas of the game.
+	//Less threads will result in slower terrain gen, but may improve performance in other areas of the game.
+	"Threads": 8,
+
+	//Configures how initial player spawning works in Big Globe worlds.
+	//These config options have no effect outside of Big Globe worlds.
+	"Player Spawning": {
+
+		//Maximum distance from the origin which players can spawn at.
+		//This is a square distance, not a circular distance.
+		"Max Spawn Radius": 10000.0,
+
+		//If true, every player will be given their own unique spawn point the first time they spawn in the world.
+		//If false, every player will spawn at the world's spawn point.
+		//This config option does not affect players who have set their spawn point manually with a bed, a respawn anchor, or the /spawnpoint command.
+		"Per-Player Spawn Points": false
+	},
+
+	//Options that are useful for data pack developers.
+	//Normal users should leave all of these disabled.
+	"Data Pack Debugging": {
+
+		//If true, Big Globe will generate graphs showing all column value dependencies.
+		//If false, Big Globe will not do that.
+		//The generated graphs can sometimes be useful for finding unexpected or accidental dependencies.
+		"Generate dependency graphs": false,
+
+		//If true, Big Globe will print all decision trees to the game console and log file when they're loaded.
+		//If false, Big Globe will not do that.
+		//Decision trees can be hard to follow, so having the entire tree in one place can be useful for understanding its structure.
+		"Print decision trees": false,
+
+		//If true, Big Globe will log a message to the game console and log file when a structure attempts to spawn somewhere and, if applicable, the reason why it failed to spawn there.
+		//If false, Big Globe will not do that.
+		//This option can be useful for debugging why a specific structure isn't spawning anywhere.
+		"Log structure spawn attempts": false,
+
+		//Regex controlling which structures get logged when 'Log structure spawn attempts' is enabled.
+		//This regex will be matched against the name of the structure that's trying to spawn.
+		//Useful for cutting down on log spam and focusing only on the structure(s) you care about.
+		"Structure spawning log filter": "",
+
+		//If true, Big Globe will log a message to the game console and log file when an empty tag is loaded.
+		//If false, Big Globe will not do that.
+		//This option can be useful for finding tags that you forgot to put values in, and can occasionally be useful for debugging tags that are referenced before loading is complete, resulting in a tag that shouldn't be empty, but is.
+		"Log empty tags": false,
+
+		//If true, Big Globe will prevent the world from loading if overriders are found which are not in any tags.
+		//If false, Big Globe will log a warning in this case instead.
+		//This option can be useful as a sanity check to ensure your overrider tags are setup correctly.
+		"Reject unused overriders": false,
+
+		//VANILLA: Use vanilla logic. (pretends the tag is empty if it contains any invalid entries)
+		//FORCE_LOAD: Same as the "Load My F***ing Tags" mod. (loads all valid entries and ignores invalid entries)
+		//FORCE_ABORT: Fails datapack validation if any tags contain invalid entries. Useful for finding errors in data packs.
+		//Due to mixin conflicts, this option is ignored when using forge via Sinytra Connector, and vanilla logic is always used there.
+		"Invalid tag handling": "VANILLA",
+
+		//If true, Big Globe will log a message to the game console and log file when extra mob spawns are computed for a biome/spawn group.
+		//If false, Big Globe will not do that.
+		//Extra mob spawns are computed lazily and as-needed, so not all spawns will be printed immediately when the world is loaded.
+		"Log extra mob spawns": false
+	},
+
+	//Configures Big Globe's native LOD rendering functionality.
+	//LOD rendering lets you see farther without significant framerate drops.
+	"LOD Rendering": {
+
+		//ON: Big Globe will generate and render a simplified model of the world that has a very far view distance.
+		//OFF: Big Globe will not do that.
+		//AUTO: Big Globe will only do that when neither Distant Horizons nor Voxy are installed.
+		//If you're on multiplayer, the server and the client must both have this option enabled for LOD rendering to work.
+		"Enabled": "AUTO",
+
+		//This config option controls what openGL tricks Big Globe uses to render LODs.
+		//It is recommended to set this to AUTO to allow Big Globe to pick the best backend for your hardware and drivers.
+		//This option exists for people who have compatibility issues with Big Globe's default selection.
+		//SIMPLE_SEPARATE: uses one glDrawElements() call for each LOD node.
+		//SIDED_SEPARATE: groups faces by normal vector, and for each LOD node, issues a glMultiDrawElements() call for all faces which are facing towards the player.
+		//SIDED_COMBINED: groups faces by normal vector, and at the end of rendering, issues a single glMultiDrawElements() call for all visible geometry.
+		//AUTO: uses SIDED_SEPARATE, since it seems to be the most stable across different hardware and drivers.
+		"Renderer Backend": "AUTO",
+
+		//The number of quads Big Globe will allow itself to render.
+		//More quads will allow higher quality LOD rendering.
+		//Fewer quads will use less VRAM.
+		"Maximum Quad Count": 50000000,
+
+		//Factor controlling how far away LOD terrain can render before it gets replaced with a lower quality version of that terrain.
+		//Higher quality will use higher quality models for further distances.
+		//Lower quality will require fewer quads.
+		"Quality": 1.0,
+
+		//Higher numbers will result in non-worldgen blocks rendering from farther away.
+		//Lower numbers will result in faster loading, as chunk loading is slow.
+		//LOD chunk loading currently only works in singleplayer.
+		"Max LOD For Chunk Loading": 5,
+
+		//Maximum number of solid blocks which can be skipped over when constructing LOD geometry from real blocks.
+		//Higher numbers will result in less memory usage.
+		//Lower numbers will result in more accurate LODs.
+		"Vertical Compression": 16,
+
+		//Depth below the surface where real blocks start getting ignored.
+		//Higher numbers will allow some caves near the surface to continue rendering in LODs.
+		//Set to -1 to disable cave culling and allow all caves to render.
+		"Cave Culling Depth": 16,
+
+		//Closest distance that LOD terrain will render at, as a multiplier of your vanilla render distance.
+		//Lower numbers will allow LOD terrain to render closer to the player.
+		//Visual artifacts may occur if this number is too small. Must be greater than 0 and less than Max View Distance.
+		"Min View Distance": 0.25,
+
+		//Furthest distance that LOD terrain will render at, as a multiplier of your vanilla render distance.
+		//Higher numbers will allow LOD terrain to render further away from the player.
+		//Visual artifacts may occur if this number is too large. Must be greater than Min View Distance.
+		"Max View Distance": 256.0,
+
+		//Distance where Big Globe will generate LOD terrain inside, as a multiplier of your vanilla render distance.
+		//Higher numbers can reduce flickering LODs when moving quickly, but will also place higher demands on VRAM usage.
+		//Must be greater than or equal to Max View Distance.
+		"Generation Buffer Distance": 512.0,
+
+		//Multiplier for the amount of fog on LODs. Note that normal terrain does not have fog when LOD rendering is enabled.
+		//Higher numbers mean more fog.
+		//Setting this to 0 will disable fog for LODs.
+		"Fog Density": 32.0,
+
+		//How much the fog density depends on Y level.
+		//Higher numbers mean more fog at lower Y levels and less fog at higher Y levels.
+		//Setting this to 0 will mean the fog density is uniform. In other words, the fog shape will be spherical.
+		"Fog Height Scale": 6.0,
+
+		//NONE - The underground and all blocks in it are completely skipped.
+		//FILL - The underground will be filled with stone, but no caves will generate.
+		//CARVE - Caves will generate, but underground structures and features will not.
+		//DECORATE - All underground stuff will generate normally.
+		//Reducing this value can increase the speed which Big Globe can generate LOD terrain at.
+		"Underground Mode": "FILL",
+
+		//If true, the current progress of LOD generation will be displayed as a status message.
+		//If false, it will stay in the F3 menu only.
+		//This feature was added because people kept reporting my LOD renderer as a bug without waiting for it to finish loading in first.
+		"Show Progress": true
+	},
+
+	//Configures special actions to skip when generating chunks for Distant Horizons.
+	//None of these actions will ever be skipped for normal chunks. This category will have no effect if Distant Horizons is not installed.
+	"Distant Horizons Integration": {
+
+		//If true, Big Globe will generate distant terrain directly through Distant Horizons' API, skipping chunks entirely.
+		//If false, Big Globe will allow Distant Horizons to wrap Big Globe's default chunk generator.
+		//Enabling this config option will skip structures and features. In particular, you will not see any trees with this option enabled until you get close to them.
+		"Hyperspeed Generation": false,
+
+		//NONE - The underground and all blocks in it are completely skipped.
+		//FILL - The underground will be filled with stone, but no caves will generate.
+		//CARVE - Caves will generate, but underground structures and features will not.
+		//DECORATE - All underground stuff will generate normally.
+		//Reducing this value can increase the speed which Big Globe can generate chunks for Distant Horizons at.
+		"Underground Mode": "FILL"
+	},
+
+	//Configures special actions to take or skip when generating chunks for Voxy.
+	//None of these actions will ever be skipped for normal chunks. This category will have no effect if Voxy is not installed.
+	"Voxy Integration": {
+
+		//If true, Big Globe will generate terrain for Voxy constantly in a background thread.
+		//If false, Voxy will only process chunks you've visited.
+		//Note that terrain generated this way may be a simplified representation of actual terrain, and finer details may be filled in only when you get closer to it.
+		"Use Worldgen Thread": true,
+
+		//NONE - The underground and all blocks in it are completely skipped.
+		//FILL - The underground will be filled with stone, but no caves will generate.
+		//CARVE - Caves will generate, but underground structures and features will not.
+		//DECORATE - Currently the same as 2, but maybe some day underground structures and features might generate too.
+		//Reducing this value can increase the speed which Big Globe can generate chunks for Voxy at.
+		"Underground Mode": "NONE",
+
+		//If true, Big Globe will tell Voxy what the light level of air blocks are.
+		//If false, Big Globe will skip air blocks when giving data to Voxy.
+		//Enabling this option can fix some lighting errors with Voxy, at the cost of LOD generation speed.
+		"Light Air": false
+	},
+
+	//Configures special behaviors when C2ME is installed.
+	//These options are ignored when C2ME is not installed.
+	"C2ME Integration": {
+
+		//If true, Big Globe will use multiple threads when generating structures.
+		//If false, Big Globe will use a single thread when generating structures.
+		//This config option can be disabled if it causes instability.
+		"Multi-Threaded Structures": true
+	},
+
+	//Don't change this.
+	"Config Version": 2
+}

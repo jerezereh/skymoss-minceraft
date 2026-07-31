@@ -1,0 +1,8 @@
+{
+  "type": "neoorigins:modify_damage",
+  "name": "Flammable",
+  "description": "Your body is a slick, oily gel that catches easily and keeps burning. You take 50% more damage from all fire, lava, and heat.",
+  "direction": "in",
+  "damage_type": "#minecraft:is_fire",
+  "multiplier": 1.5
+}

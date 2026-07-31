@@ -1,0 +1,11 @@
+{
+  "type": "neoorigins:action_on_event",
+  "name": "Acidic Residue II",
+  "description": "Your acid has thickened with age. Attackers take back 15% of the damage they deal to you.",
+  "event": "hit_taken",
+  "entity_action": {
+    "type": "neoorigins:damage_attacker",
+    "amount_ratio": 0.15,
+    "source": { "name": "magic" }
+  }
+}

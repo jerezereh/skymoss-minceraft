@@ -1,0 +1,6 @@
+{
+  "type": "neoorigins:prevent_action",
+  "name": "Boneless",
+  "description": "You have no skeleton to shatter. Falls of any height leave you completely unharmed \u2014 you simply squish flat and keep moving.",
+  "action": "fall_damage"
+}

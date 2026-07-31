@@ -1,0 +1,23 @@
+{
+  "type": "neoorigins:condition_passive",
+  "hidden": true,
+  "interval": 10,
+  "toggleable": false,
+  "condition": {
+    "type": "neoorigins:and",
+    "conditions": [
+      { "type": "neoorigins:resource", "resource": "slimekin:regrowth", "comparison": ">=", "compare_to": 100 },
+      { "type": "neoorigins:power_active", "power": "slimekin:split_flag_medium" },
+      { "type": "neoorigins:power_active", "power": "slimekin:split_flag_small", "inverted": true }
+    ]
+  },
+  "entity_action": {
+    "type": "neoorigins:and",
+    "actions": [
+      { "type": "neoorigins:toggle", "power": "slimekin:split_flag_medium", "value": false },
+      { "type": "neoorigins:change_resource", "resource": "slimekin:regrowth", "operation": "set", "change": 0 },
+      { "type": "neoorigins:heal", "amount": 6.0 },
+      { "type": "neoorigins:play_sound", "sound": "minecraft:entity.slime.squish", "volume": 1.0, "pitch": 1.1 }
+    ]
+  }
+}

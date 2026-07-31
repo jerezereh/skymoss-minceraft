@@ -1,0 +1,13 @@
+name = "Crafting Station: J/EMI Edition Updated"
+filename = "craftingstationjei-1.21.1-NeoForge-2.1.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/rc8HlDUK/versions/XBqcaip5/craftingstationjei-1.21.1-NeoForge-2.1.1.jar"
+hash-format = "sha512"
+hash = "fd4cabc65c4fd85e3b44fe5e7d515e63c8cf62c376373fbe03c55b671075476b541e60fde5d8256c1328e6ea6bcc9a29fc9ed77742f885f11e0c91bb49789862"
+
+[update]
+[update.modrinth]
+mod-id = "rc8HlDUK"
+version = "XBqcaip5"

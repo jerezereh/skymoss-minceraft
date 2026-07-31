@@ -1,0 +1,13 @@
+{
+  "type": "neoorigins:action_on_event",
+  "hidden": true,
+  "event": "respawn",
+  "entity_action": {
+    "type": "neoorigins:and",
+    "actions": [
+      { "type": "neoorigins:toggle", "power": "slimekin:split_flag_medium", "value": false },
+      { "type": "neoorigins:toggle", "power": "slimekin:split_flag_small", "value": false },
+      { "type": "neoorigins:change_resource", "resource": "slimekin:regrowth", "operation": "set", "change": 0 }
+    ]
+  }
+}

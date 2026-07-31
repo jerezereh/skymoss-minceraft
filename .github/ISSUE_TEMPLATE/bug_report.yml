@@ -1,0 +1,53 @@
+name: Bug report
+description: Something is broken, crashing, or behaving wrong
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every issue here gets its own Discord thread automatically, so you can keep
+        talking about it in whichever place you prefer.
+
+  - type: dropdown
+    id: side
+    attributes:
+      label: Where did it happen?
+      options:
+        - Client (my game)
+        - Server (everyone affected)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What went wrong, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How can we make it happen again?
+      placeholder: |
+        1. Go to …
+        2. Place a …
+        3. It crashes
+
+  - type: input
+    id: version
+    attributes:
+      label: Pack version
+      description: Shown in the Prism instance name, or the release you installed.
+      placeholder: '0.1.0'
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Crash report or log
+      description: |
+        Paste the crash report, or link it. From Prism: right-click the instance →
+        Folder → `crash-reports/`. Long logs are fine — put them in a code block.
+      render: text

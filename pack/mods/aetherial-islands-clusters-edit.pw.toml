@@ -1,0 +1,13 @@
+name = "Aetherial Islands: Clusters Edit"
+filename = "aetherial-islands-clusters-edit-1.2.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/JjSZB9aO/versions/emcEeMNv/aetherial-islands-clusters-edit-1.2.1.jar"
+hash-format = "sha512"
+hash = "f54123d33499ee86bb8e1aec6cf68d0dc429d6e25cf8653c8320c269fd5bbaea3e14b8c9d7d23cb0d22e2a4192ddc4769f6d588202a886b782833a857a908ea6"
+
+[update]
+[update.modrinth]
+mod-id = "JjSZB9aO"
+version = "emcEeMNv"

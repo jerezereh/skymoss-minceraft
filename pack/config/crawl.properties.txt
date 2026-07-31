@@ -1,0 +1,2 @@
+#Thu Jul 23 14:13:17 PDT 2026
+replace-crawl-animation=true

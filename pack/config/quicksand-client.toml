@@ -1,0 +1,3 @@
+[render]
+	#When enabled, renders fog when submerged in Quicksand.
+	renderFog = true

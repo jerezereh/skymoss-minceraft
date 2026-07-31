@@ -1,0 +1,13 @@
+name = "Moderately Enough Effect Descriptions (MEED)"
+filename = "meed-1.21.1-8.0.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/1dxbxzCg/versions/Y7ga2NkN/meed-1.21.1-8.0.2.jar"
+hash-format = "sha512"
+hash = "70daa7cba8dfbbb41d9e6fe860615df9857b3651697820fb664845771b0241d956645417b7fb90084193deafe830ee9a9322152028ff884876e6f220f4116d74"
+
+[update]
+[update.modrinth]
+mod-id = "1dxbxzCg"
+version = "Y7ga2NkN"

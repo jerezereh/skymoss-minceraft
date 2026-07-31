@@ -1,0 +1,13 @@
+name = "Create: Ballast"
+filename = "ballastmod-0.1.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/5ypXYrfG/versions/uJwkM1Xh/ballastmod-0.1.0.jar"
+hash-format = "sha512"
+hash = "e69d283a520983122310c5576306aaacd4a326b5c38de3ec1fdd859561bd76b8905817f8ff7004e56d5c43e90d304650aaa523c5fe51d7331faf61921ddc2f7d"
+
+[update]
+[update.modrinth]
+mod-id = "5ypXYrfG"
+version = "uJwkM1Xh"

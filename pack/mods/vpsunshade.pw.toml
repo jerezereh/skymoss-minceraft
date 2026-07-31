@@ -1,0 +1,16 @@
+# HAND-WRITTEN — not resolvable from Modrinth or CurseForge.
+# Bespoke jar (com.example.vpsunshade) adding a sunshade handler for Valkyrien Skies
+# sublevels. Ships in the FlyMoss world depend on it. Served from a GitHub release
+# rather than the mirror — our own build, stable URL, no domain required.
+#
+# side is "both": the handler runs against sublevel data, and the world uses sublevels
+# server-side. Narrow this to "client" only if confirmed render-only.
+# Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
+name = "VP Sunshade"
+filename = "vpsunshade-1.0.0.jar"
+side = "both"
+
+[download]
+url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/orphan-mods-v1/vpsunshade-1.0.0.jar"
+hash-format = "sha512"
+hash = "fdf26cb55200cd02184d7445f2dc23eb9ed492cc4f393a64ce1bcabee1197fac7a2166b25bc1d59be309714a8ee7465b19c0e58ca8b8bab65d9716fb0ddbde00"

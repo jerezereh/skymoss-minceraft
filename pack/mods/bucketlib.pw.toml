@@ -1,0 +1,13 @@
+name = "BucketLib"
+filename = "bucketlib-neoforge-1.21-4.1.7.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/DItE655o/versions/Jx9AEhUT/bucketlib-neoforge-1.21-4.1.7.2.jar"
+hash-format = "sha512"
+hash = "98fb0a2847e704da3286b0289fbae71c93738e09b42085f56414c1564acd8f0e456d64e007f36554074b52bb1d80581507e303afa50d068b69a3c46eb1212a9a"
+
+[update]
+[update.modrinth]
+mod-id = "DItE655o"
+version = "Jx9AEhUT"

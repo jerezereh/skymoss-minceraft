@@ -1,0 +1,224 @@
+# Server setup
+
+Standing up Skymoss on the Ubuntu host. Everything runs in one Docker Compose stack.
+
+## What you need
+
+- ~16 GB RAM (the server is configured for an 8 GB heap; the rest is headroom)
+- Ubuntu with sudo
+
+A domain is **not** required. Nothing in the stack needs public HTTP ingress.
+
+## 0. Prerequisites
+
+A fresh Ubuntu box has none of this — Docker in particular is not preinstalled.
+
+```bash
+sudo apt update && sudo apt install -y git
+git clone https://github.com/jerezereh/skymoss-minceraft.git /srv/skymoss-minceraft
+cd /srv/skymoss-minceraft
+
+./infra/bootstrap.sh              # report what's missing
+./infra/bootstrap.sh --install    # install it
+```
+
+What it checks and why:
+
+| | Needed for |
+|---|---|
+| **docker** + compose plugin | everything |
+| **git** | cloning this repo |
+| **zstd** | compressing world snapshots |
+| **git-lfs** | pushing snapshots to the worlds repo |
+| node | *only* to edit the pack on this host — you can do that on your desktop instead |
+
+After installing Docker you must **log out and back in** before the `docker` command
+works without sudo.
+
+## 1. Configure
+
+```bash
+cd /srv/skymoss-minceraft/infra
+cp .env.example .env
+$EDITOR .env
+```
+
+Only three values are strictly required: `RCON_PASSWORD`, `CI_EVENT_SECRET`, and the
+Discord/GitHub credentials if you want the bridge. Anything left empty either has a
+working default or disables that feature cleanly. The stack refuses to start on a
+missing *required* value rather than booting into a half-working state.
+
+## 2. Publish the manifest
+
+The server reads the pack manifest from the mirror, so that has to exist first.
+
+```bash
+sudo mkdir -p /srv/mirror && sudo chown "$USER" /srv/mirror
+bash /srv/skymoss-minceraft/tools/sync-mirror.sh --manifest-only /srv/mirror
+```
+
+**You do not need the jars on this host.** Every metafile points at Modrinth (241) or
+a GitHub release (3), so the server downloads mods from upstream and only reads the
+manifest locally. That's ~2 MB of TOML instead of a 400 MB transfer.
+
+`PACKWIZ_URL` defaults to `http://mirror/pack/pack.toml` over the internal compose
+network — no domain, no public hostname.
+
+### Later: mirror the jars too (optional)
+
+The mirror's real purpose is surviving a mod being deleted upstream. Once things are
+running, copy the jars over and re-run without the flag:
+
+```bash
+bash tools/sync-mirror.sh /srv/skymoss-jars /srv/mirror
+```
+
+That verifies every jar against its manifest hash and refuses to publish a mismatch.
+Then repoint the affected metafiles at the mirror if upstream ever disappears.
+
+### The three orphan jars
+
+`KPEnchantFix`, `kp_slot_fix`, and `vpsunshade` are bespoke builds that exist nowhere
+upstream. They're served from a **GitHub release** rather than the mirror — they're
+your own code, not redistributed third-party mods, so the licensing reason that keeps
+the other 241 jars out of the repo doesn't apply. A release asset is a stable, free,
+backed-up URL that needs no domain.
+
+Create that release once (17 KB total):
+
+```bash
+cd /path/to/the/jars
+gh release create orphan-mods-v1 \
+  KPEnchantFix-neoforge-mod.jar kp_slot_fix-1.0.0.jar vpsunshade-1.0.0.jar \
+  --title "Orphan mods v1" \
+  --notes "Bespoke jars with no upstream source. Referenced by pack/mods/*.pw.toml."
+```
+
+Until it exists, `node tools/check-urls.ts` will report those three as unreachable and
+the pack will not install.
+
+## 3. Optional: Cloudflare tunnel
+
+**Skip this if you don't own a domain** — named tunnel hostnames require a Cloudflare
+zone, and quick-tunnel URLs change on every restart. Nothing in the stack needs public
+ingress: the server reads the manifest over the internal network, and the bridge polls
+GitHub rather than receiving webhooks.
+
+If you do have a domain:
+
+| Hostname | Service |
+|---|---|
+| `mirror.yourdomain.com` | `http://mirror:80` |
+| `bridge.yourdomain.com` | `http://bridge:3000` |
+
+Set `CLOUDFLARE_TUNNEL_TOKEN`, then start it explicitly — it's behind a profile:
+
+```bash
+docker compose --profile tunnel up -d
+```
+
+Minecraft is **not** proxied through the tunnel; see "Player ingress" below.
+
+## 4. Start
+
+```bash
+docker compose up -d
+docker compose logs -f mc
+```
+
+First boot downloads ~400 MB of mods and builds the mod cache, which takes a while.
+The healthcheck has a 10-minute grace period for exactly this reason; don't panic if
+the container reports unhealthy before then.
+
+## 5. Migrate the world
+
+```bash
+docker compose stop mc
+WORLD_VOL=$(docker volume inspect skymoss_mc-data --format '{{ .Mountpoint }}')
+cp -a /path/to/Skymoss/saves/FlyMoss "$WORLD_VOL/FlyMoss"
+chown -R 1000:1000 "$WORLD_VOL/FlyMoss"
+docker compose start mc
+```
+
+> **Copy `sublevels/` intact.** It holds the Valkyrien Skies / Create Aeronautics ship
+> data. Losing it deletes every ship in the world.
+
+## Player ingress
+
+`e4mc` does **not** work here. It is built for LAN-opened singleplayer worlds and has
+no dedicated-server mode — it is in the pack as a `client`-side mod and is simply
+unused on the server.
+
+### Cloudflare Tunnel cannot carry Minecraft
+
+Worth stating plainly, because it's a natural assumption once a tunnel is running:
+Minecraft Java is **raw TCP on 25565, not HTTP**. Cloudflare Tunnel routes HTTP/HTTPS.
+Arbitrary TCP is Cloudflare **Spectrum**, an Enterprise-tier product.
+
+The usual workaround has every player run `cloudflared access tcp` locally — which
+means every player installs software before they can join.
+
+The tunnel is still the right tool for the mirror and the bridge. It just can't carry
+players.
+
+### playit.gg (what this stack uses)
+
+Included in the compose file. Free tier covers 3 tunnels, works behind CGNAT with no
+port forwarding, and runs **only on this host** — players just type an address.
+
+```bash
+docker compose up -d playit
+docker compose logs playit        # prints a claim URL on first run
+```
+
+Open the claim URL, approve the agent, then in the playit dashboard create a
+**Minecraft Java** tunnel pointing at `127.0.0.1:25565`. Copy the generated secret
+into `PLAYIT_SECRET_KEY` in `.env` and restart so it persists across container
+recreation.
+
+You'll get an address like `skymoss.at.ply.gg:7261`. That's what players enter —
+pin it in Discord. A custom domain is a paid feature; the free address is stable.
+
+### Alternatives
+
+| Option | Notes |
+|---|---|
+| **Port forward + DuckDNS** | Free, lowest latency, no third party. Needs router access, and impossible behind CGNAT. Publishes your home IP to everyone who joins. |
+| **Tailscale** | Most private, but every player installs Tailscale. |
+
+## Self-hosted runner (optional)
+
+`mirror-sync.yml` runs on a self-hosted runner, because GitHub-hosted runners can't
+reach your mirror. To enable it, install a runner on this host with the label
+`skymoss`:
+
+```
+Settings → Actions → Runners → New self-hosted runner
+```
+
+Until that exists, run `tools/sync-mirror.sh` by hand after pack changes.
+
+## Backups
+
+Set up `restic` for frequent backups, and use the snapshot script for milestone
+history. See the [skymoss-worlds README](https://github.com/jerezereh/skymoss-worlds)
+for why both, and what each is for.
+
+```bash
+# Weekly milestone snapshot
+/srv/skymoss-minceraft/infra/backup/snapshot-world.sh weekly
+```
+
+## Troubleshooting
+
+**Server exits immediately** — check `docker compose logs mc` for a missing-mod error.
+Usually the mirror is incomplete; re-run `sync-mirror.sh` and read its summary.
+
+**Players kicked for flying** — `allow-flight` must be `true`. Riding a VS2 ship reads
+as flight to vanilla anticheat.
+
+**Server freezes then dies under load** — confirm `max-tick-time=-1`. The default
+watchdog kills the server mid-tick during heavy chunk generation, which risks
+corrupting the world.
+
+**Pack won't install** — run `node tools/check-urls.ts` to find dead download URLs.

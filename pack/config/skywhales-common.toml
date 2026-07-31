@@ -1,0 +1,70 @@
+#How often, how many, and where (around the player) sky whales spawn.
+[spawning]
+	#Master switch for near-player whale spawning. When false, whales only appear via spawn
+	#egg, /summon, or a server's own summoner scripts.
+	spawnEnabled = true
+	#How often (in ticks; 20 ticks = 1s) the spawner runs a spawn attempt for each eligible
+	#player. Larger = whales appear less often. Cheap between runs (just a countdown).
+	# Default: 400
+	# Range: 20 ~ 24000
+	spawnIntervalTicks = 20000
+	#Probability (0.0-1.0) that a given attempt (one per eligible player per interval) spawns
+	#a whale. Combined with the interval this sets how quickly whales appear up to the cap.
+	# Default: 0.5
+	# Range: 0.0 ~ 1.0
+	spawnChance = 0.5
+	#The most whales allowed within 'nearbyWhaleRadius' of a player before the spawner stops
+	#adding more — this is what keeps them 'around but not too many'. 0 disables spawning;
+	#-1 removes the cap (not recommended).
+	# Default: 3
+	# Range: -1 ~ 32
+	maxNearbyWhales = 3
+	#Radius (blocks) the 'maxNearbyWhales' cap counts within, around the player. Keep this
+	#>= immediateDespawnDistance so whales that linger (but haven't despawned yet) still count
+	#toward the cap — otherwise slightly more than maxNearbyWhales can gather around a player.
+	# Default: 128
+	# Range: 16 ~ 256
+	nearbyWhaleRadius = 128
+	#When true, only spawn for players standing over an ocean biome (tag #minecraft:is_ocean).
+	#Set false to let whales spawn around players anywhere (any biome, including over land).
+	restrictToOceanBiome = true
+	#When true, ALSO spawn for players out over the void — a column with no terrain/surface
+	#below (e.g. flying over the abyss on a void / lifted-island world). This is additive to
+	#the ocean rule above: with restrictToOceanBiome=true, whales then appear over ocean AND
+	#over the void, but not over normal land. (If restrictToOceanBiome is false, spawning is
+	#already allowed everywhere including the void, so this flag has no extra effect.)
+	spawnOverVoid = false
+	#Lowest / highest height (blocks above the player) at which a whale is placed. Keep
+	#spawnHeightMin <= spawnHeightMax.
+	# Default: 12
+	# Range: 0 ~ 128
+	spawnHeightMin = 12
+	# Default: 40
+	# Range: 0 ~ 128
+	spawnHeightMax = 40
+	#Nearest / farthest horizontal distance (blocks from the player) at which a whale is
+	#placed. Keep spawnDistanceMin <= spawnDistanceMax, and <= your simulation distance so the
+	#whale spawns in a loaded chunk.
+	# Default: 24
+	# Range: 0 ~ 128
+	spawnDistanceMin = 24
+	# Default: 64
+	# Range: 0 ~ 128
+	spawnDistanceMax = 64
+
+#How and when whales are removed (standard distance-based wildlife despawn).
+[despawn]
+	#Master switch for distance-based despawn. When false, whales are not removed for being
+	#far from players (they can still be removed by the age limit below, if set).
+	despawnEnabled = true
+	#A whale farther than this many blocks from the nearest player despawns. Built-in
+	#behavior = 120. Higher = whales linger from farther away, BUT a whale that drifts past
+	#the server's simulation distance (usually ~128 blocks / 8 chunks) stops ticking and can
+	#no longer despawn — set much above that only if you accept whales that may freeze/orphan
+	#in unloaded chunks.
+	# Default: 120
+	# Range: 16 ~ 512
+	immediateDespawnDistance = 120
+	#When true, spawned whales are marked persistent and NEVER despawn. WARNING: whales then
+	#accumulate across explored oceans and can be orphaned in unloaded chunks across restarts.
+	forcePersistent = false

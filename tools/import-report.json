@@ -1,0 +1,36 @@
+{
+  "generatedFrom": "C:/Users/Novo-/source/skymoss-scratch/Skymoss/mods",
+  "totalJars": 244,
+  "resolvedModrinth": 241,
+  "resolvedCurseForge": 0,
+  "unresolved": [
+    {
+      "filename": "KPEnchantFix-neoforge-mod.jar",
+      "sha512": "31070354e35a4f38c7f9418d1a828232c13529f896de7118b3c63094f4e6bf2917befcd0200653272d762e353fd3fbaecb528eabbfd6bad8eafc46b2f802b44d",
+      "sha1": "fb6972a24ef621495043f0fe0229a065f5e8346e",
+      "murmur2": 2489530149
+    },
+    {
+      "filename": "kp_slot_fix-1.0.0.jar",
+      "sha512": "2abdeb85ee1e1f7aa43d2e779ba27b9edf95f95ef0fccb44df120f807d0b513e6f9b8e06ba1f98905af12ff67d0b12f9ca975d0b3cbb479fef0800c83e5274d6",
+      "sha1": "3bc755957ab04074fa2be14f192c834211b97732",
+      "murmur2": 650345738
+    },
+    {
+      "filename": "vpsunshade-1.0.0.jar",
+      "sha512": "fdf26cb55200cd02184d7445f2dc23eb9ed492cc4f393a64ce1bcabee1197fac7a2166b25bc1d59be309714a8ee7465b19c0e58ca8b8bab65d9716fb0ddbde00",
+      "sha1": "f61ee0d4398224941c6947b6adc85758ae97adab",
+      "murmur2": 202427805
+    }
+  ],
+  "needsMirror": [],
+  "sideInferred": [
+    "aeronauticscovers-1.21.1-NeoForge-1.0.1.jar",
+    "craftingstationjei-1.21.1-NeoForge-2.1.1.jar"
+  ],
+  "bySide": {
+    "both": 186,
+    "client": 36,
+    "server": 19
+  }
+}

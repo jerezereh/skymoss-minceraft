@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# bootstrap — check (and optionally install) what a fresh Ubuntu host needs.
+#
+#   ./infra/bootstrap.sh              # report what's missing, change nothing
+#   ./infra/bootstrap.sh --install    # install the missing pieces via apt/docker
+#
+# Reports by default rather than installing, so you can see what it wants to do to
+# your machine before it does it.
+
+set -euo pipefail
+
+INSTALL=0
+[[ "${1:-}" == "--install" ]] && INSTALL=1
+
+missing=()
+optional_missing=()
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+check() {
+  local cmd="$1" label="$2" tier="${3:-required}"
+  if have "$cmd"; then
+    printf '  \033[32m✓\033[0m %-14s %s\n' "$cmd" "$(command -v "$cmd")"
+  else
+    printf '  \033[31m✗\033[0m %-14s %s (%s)\n' "$cmd" "$label" "$tier"
+    if [[ "$tier" == "required" ]]; then missing+=("$cmd"); else optional_missing+=("$cmd"); fi
+  fi
+}
+
+echo "Skymoss host prerequisites"
+echo
+
+echo "Required to run the stack:"
+check docker "container runtime"
+check git    "to clone this repo"
+
+echo
+echo "Required for world snapshots:"
+# snapshot-world.sh pipes tar through zstd; the worlds repo stores tarballs in LFS.
+check zstd    "compresses world snapshots" snapshot
+check git-lfs "stores snapshots in the worlds repo" snapshot
+
+echo
+echo "Only needed to EDIT the pack on this host (you can do that on your desktop):"
+check node "runs tools/*.ts" optional
+
+echo
+# The compose plugin is a docker subcommand, not its own binary.
+if have docker; then
+  if docker compose version >/dev/null 2>&1; then
+    printf '  \033[32m✓\033[0m %-14s %s\n' "compose" "$(docker compose version --short 2>/dev/null || echo present)"
+  else
+    printf '  \033[31m✗\033[0m %-14s %s\n' "compose" "docker compose plugin missing (required)"
+    missing+=("docker-compose-plugin")
+  fi
+fi
+
+echo
+if [[ ${#missing[@]} -eq 0 && ${#optional_missing[@]} -eq 0 ]]; then
+  echo "All prerequisites present."
+  exit 0
+fi
+
+if (( ! INSTALL )); then
+  echo "To install everything that's missing:"
+  echo
+  if ! have docker; then
+    echo "  # Docker Engine + compose plugin (official convenience script)"
+    echo "  curl -fsSL https://get.docker.com | sudo sh"
+    echo "  sudo usermod -aG docker \$USER    # then log out and back in"
+    echo
+  fi
+  echo "  sudo apt update && sudo apt install -y git zstd git-lfs"
+  echo
+  echo "Re-run with --install to do this automatically."
+  # Missing required tooling is a failure; missing snapshot/optional tooling is not.
+  [[ ${#missing[@]} -gt 0 ]] && exit 1
+  exit 0
+fi
+
+echo "Installing…"
+
+if ! have docker; then
+  echo "==> Docker Engine"
+  curl -fsSL https://get.docker.com | sudo sh
+  sudo usermod -aG docker "$USER"
+  echo "    NOTE: log out and back in before docker works without sudo."
+fi
+
+APT_PKGS=()
+have git     || APT_PKGS+=(git)
+have zstd    || APT_PKGS+=(zstd)
+have git-lfs || APT_PKGS+=(git-lfs)
+
+if [[ ${#APT_PKGS[@]} -gt 0 ]]; then
+  echo "==> apt: ${APT_PKGS[*]}"
+  sudo apt update
+  sudo apt install -y "${APT_PKGS[@]}"
+fi
+
+echo
+echo "Done. Next: cp infra/.env.example infra/.env && \$EDITOR infra/.env"

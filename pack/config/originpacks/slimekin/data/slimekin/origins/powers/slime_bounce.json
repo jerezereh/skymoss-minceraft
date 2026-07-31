@@ -1,0 +1,12 @@
+{
+  "type": "neoorigins:action_on_event",
+  "name": "Elastic Landing",
+  "description": "A normal landing is just a landing. Hold sneak as you fall and the ground throws you straight back up instead, the way a slime block bounces anything that lands on it.",
+  "event": "land",
+  "condition": { "type": "neoorigins:sneaking" },
+  "entity_action": {
+    "type": "neoorigins:add_velocity",
+    "y": 0.55,
+    "set": false
+  }
+}

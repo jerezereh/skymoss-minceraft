@@ -1,0 +1,13 @@
+name = "Enchant Innovation"
+filename = "EnchantInnovation-neoforge-1.0.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/4UK5CuGj/versions/XS8eI4lS/EnchantInnovation-neoforge-1.0.2.jar"
+hash-format = "sha512"
+hash = "7178ffab6eac11ca80d8c9fa0a1b403ff7bfb3b3543fe29e4239fc873c820894397c9f0e7ef6fb8a5759cbd67f10e6a95867d8558e6bd75259f9e2e6a428b370"
+
+[update]
+[update.modrinth]
+mod-id = "4UK5CuGj"
+version = "XS8eI4lS"

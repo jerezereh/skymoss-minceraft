@@ -1,0 +1,39 @@
+# Normalize line endings. The repo is authored on Windows but the server,
+# bridge, and CI all run on Linux, so shell scripts must stay LF.
+* text=auto eol=lf
+
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+*.sh    text eol=lf
+*.toml  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.ts    text eol=lf
+*.md    text eol=lf
+
+# Minecraft config formats are text but frequently have odd encodings.
+*.cfg      text eol=lf
+*.snbt     text eol=lf
+*.properties text eol=lf
+
+# Binary — never diff or eol-convert these.
+*.jar      binary
+*.zip      binary
+*.mrpack   binary
+*.png      binary
+*.ogg      binary
+*.nbt      binary
+*.dat      binary
+*.dat_old  binary
+*.mca      binary
+*.tar.zst  binary
+*.db       binary
+
+# packwiz metadata should render as TOML in diffs.
+*.pw.toml  text eol=lf linguist-language=TOML
+
+# Keep generated pack index out of language stats.
+pack/index.toml linguist-generated=true

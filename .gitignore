@@ -1,0 +1,106 @@
+# ---------------------------------------------------------------------------
+# Instance archives / scratch
+# ---------------------------------------------------------------------------
+# The raw instance exports are multi-GB and must never enter git history.
+Skymoss-*.zip
+/*.zip
+.scratch/
+scratch/
+
+# Zips inside the pack tree ARE content (origin packs, datapacks) and are tracked.
+# Everything else zip-shaped stays out.
+!pack/**/*.zip
+!overlays/**/*.zip
+
+# ---------------------------------------------------------------------------
+# Mod binaries — never committed. The pack is defined by pack/mods/*.pw.toml,
+# and jars are resolved from upstream or the mirror at install time.
+# ---------------------------------------------------------------------------
+*.jar
+mods/
+!pack/mods/
+mirror/
+/srv/
+
+# ---------------------------------------------------------------------------
+# Worlds — tracked in the separate skymoss-worlds repo, not here.
+# ---------------------------------------------------------------------------
+saves/
+world/
+world_nether/
+world_the_end/
+*.tar.zst
+*.mca
+
+# ---------------------------------------------------------------------------
+# Bridge runtime state
+# ---------------------------------------------------------------------------
+# Schema lives in bridge/migrations/. The live DB is binary, rewrites on every
+# message, and would conflict constantly — back it up on the box instead.
+bridge/*.db
+bridge/*.db-shm
+bridge/*.db-wal
+bridge/data/
+*.sqlite
+*.sqlite3
+
+# ---------------------------------------------------------------------------
+# Secrets
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+server/ops.json
+server/whitelist.json
+!server/ops.json.example
+!server/whitelist.json.example
+*.pem
+*.key
+cloudflared/*.json
+credentials.json
+
+# ---------------------------------------------------------------------------
+# Runtime junk from the client instance — deliberately not tracked
+# ---------------------------------------------------------------------------
+logs/
+crash-reports/
+cache/
+.mixin.out/
+local/
+downloads/
+dynamic-data-pack-cache/
+dynamic-resource-pack-cache/
+particular_cache/
+simplebackups/
+screenshots/
+session.lock
+usercache.json
+usernamecache.json
+servers.dat*
+command_history.txt
+win_event*.txt
+fabricloader.log
+.sable/
+*.log
+
+# ---------------------------------------------------------------------------
+# Node / tooling
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.npm/
+.pnpm-store/
+
+# ---------------------------------------------------------------------------
+# OS / editor
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp

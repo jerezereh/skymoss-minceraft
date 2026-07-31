@@ -1,0 +1,7 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask in Discord
+    url: https://discord.com/
+    about: >
+      Not sure it's a bug? Just ask. Anything discussed in an issue thread shows up
+      here too, so you never have to use GitHub if you'd rather not.

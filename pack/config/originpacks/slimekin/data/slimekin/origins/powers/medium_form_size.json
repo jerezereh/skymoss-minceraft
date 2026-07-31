@@ -1,0 +1,14 @@
+{
+  "type": "neoorigins:attribute_modifier",
+  "hidden": true,
+  "attribute": "minecraft:generic.scale",
+  "amount": -0.25,
+  "operation": "add_value",
+  "condition": {
+    "type": "neoorigins:and",
+    "conditions": [
+      { "type": "neoorigins:power_active", "power": "slimekin:split_flag_medium" },
+      { "type": "neoorigins:power_active", "power": "slimekin:split_flag_small", "inverted": true }
+    ]
+  }
+}

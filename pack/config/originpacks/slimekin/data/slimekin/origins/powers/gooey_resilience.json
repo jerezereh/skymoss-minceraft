@@ -1,0 +1,7 @@
+{
+  "type": "neoorigins:modify_damage",
+  "name": "Gooey Resilience",
+  "description": "Your soft, elastic body spreads out the force of every blow instead of concentrating it. You take 15% less damage from all sources.",
+  "direction": "in",
+  "multiplier": 0.85
+}

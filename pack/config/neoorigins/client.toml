@@ -1,0 +1,97 @@
+#User-interface theming. Lets you pin a specific theme on this
+#client regardless of what the server's datapacks declared.
+[ui]
+	#Forced UI theme id (e.g. "neoorigins:parchment" or
+	#"examplepack:dark_woods"). When non-empty AND the theme is
+	#actually loaded, this overrides the datapack-declared active
+	#theme. Leave empty to follow whatever the server selects.
+	theme_override = ""
+	#Revert the origin/class selection screens to the original flat
+	#high-contrast style (dark panels, light text, vanilla font) instead
+	#of the parchment scroll skin. Enable this if the parchment theme's
+	#low-contrast brown-on-paper text is hard to read.
+	classic_picker_style = false
+	#Show the in-game Origin Editor button on the origin info screen for
+	#ALL players, not just those in Creative mode. The editor is a
+	#pack-authoring tool that is creative-only by default to keep it out
+	#of survival players' way. Enable this if you author origins in
+	#survival or want testers to reach the editor without /gamemode.
+	show_origin_editor = false
+	#Initial sort order for the origin selection / info screens, used
+	#until you cycle the on-screen sort button (your cycled choice still
+	#wins for the rest of the session). Options:
+	#  MANUAL     - author-set `order` field ascending, alpha tie-break (default)
+	#  CLASS      - grouped by mod/namespace, alphabetical within
+	#  NAME_ASC   - flat alphabetical
+	#  NAME_DESC  - flat reverse-alphabetical
+	#  IMPACT_ASC - by origin impact/influence (none -> low -> medium -> high)
+	#Set IMPACT_ASC to open the picker sorted by influence.
+	#Allowed Values: MANUAL, NAME_ASC, NAME_DESC, CLASS, IMPACT_ASC
+	default_sort = "MANUAL"
+
+#Heads-up-display options local to this client.
+[hud]
+	#Hide hunger / air HUD bars for origins that don't consume them
+	#(e.g. Automaton hunger, Merling / Kraken / Automaton air).
+	#Turn off to keep vanilla bars visible regardless of origin.
+	hide_hud_bars = true
+	#Master switch for the numeric seconds drawn on cooldown icons.
+	#Packs opt individual powers in via "cooldown_countdown": true;
+	#set this to false to suppress ALL countdown numbers on this client.
+	show_cooldown_countdown = true
+	#Opacity (in percent) of the seconds countdown drawn on cooldown
+	#icons, so the number reads without hiding the icon underneath.
+	#100 = fully opaque, 0 = invisible. Values below 5 are treated
+	#as 5 when rendering (the font renderer drops text below that).
+	# Default: 70
+	# Range: 0 ~ 100
+	cooldown_countdown_opacity = 70
+	#What the ability HUD cluster shows besides live cooldowns.
+	#COOLDOWNS_AND_TOGGLES (default): cooldown slots only while
+	#recharging, plus icon-bearing toggleable powers (bright = on,
+	#dimmed = off). Idle non-toggle icons stay hidden unless the power
+	#declares "always_show_icon": true or you enable
+	#always_show_ability_icons below.
+	#ALL_ACTIVE_ABILITIES: every keybind ability with an icon keeps a
+	#persistent slot — full-bright while idle, cooldown sweep while
+	#recharging, bright/dim for toggles.
+	#Allowed Values: COOLDOWNS_AND_TOGGLES, ALL_ACTIVE_ABILITIES
+	hud_ability_display = "COOLDOWNS_AND_TOGGLES"
+	#Force every icon-bearing ability to stay on the HUD cluster even
+	#while off cooldown (as if each power declared
+	#"always_show_icon": true). Default false: idle cooldown icons
+	#disappear unless the power itself opts in.
+	always_show_ability_icons = false
+
+#Hotkey pool. Each pack-declared `"key": "translation.key.id"` on an active
+#power consumes one slot. The Controls screen shows N unassigned "Hotkey N"
+#entries; assignments happen at login from the server-side registry, so
+#rebinding a slot affects whichever power currently occupies it.
+#Larger pool = more named hotkeys can coexist, but more rows in Controls.
+#This is a CLIENT setting: keybinds are registered at client startup, so
+#the slot count is chosen locally and cannot be dictated by the server.
+[hotkeys]
+	#Number of named-keybind slots to register at client startup.
+	#Default 32. Increase if packs declare more than 32 distinct keys.
+	# Default: 32
+	# Range: 1 ~ 256
+	pool_size = 32
+	#Default physical keys for named-hotkey pool slots, so a modpack can
+	#ship pre-bound hotkeys instead of leaving every slot unbound. Each
+	#entry is "N=key.keyboard.X" where N is the 1-indexed slot (matching a
+	#power's numeric "key": N) and key.keyboard.X is a vanilla input id
+	#(e.g. "1=key.keyboard.r", "2=key.keyboard.z", "3=key.mouse.4").
+	#This is a CLIENT setting applied at key registration; a datapack cannot
+	#set it (keybinds register before datapacks load). Players can still
+	#rebind any slot in Controls — this only sets the default.
+	slot_defaults = []
+
+#Cross-mod compatibility toggles.
+[compat]
+	#Dragon Survival: block DS's own dragon-SPECIES selection screens
+	#(the altar / species-choice popup) so the NeoOrigins origin picker
+	#is the only way to choose or change a dragon species. Default false
+	#= leave DS's species screens usable alongside origins. DS's
+	#appearance editor, skins, abilities and inventory are ALWAYS left
+	#open regardless of this setting.
+	suppress_dragon_species_screens = false

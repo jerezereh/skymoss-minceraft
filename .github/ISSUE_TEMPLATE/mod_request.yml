@@ -1,0 +1,43 @@
+name: Mod request
+description: Suggest a mod to add, remove, or update
+labels: ['mod-request']
+body:
+  - type: input
+    id: mod
+    attributes:
+      label: Which mod?
+      placeholder: 'Create: Steam n Rails'
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: Modrinth or CurseForge page. Modrinth is strongly preferred — those resolve automatically into the manifest.
+      placeholder: 'https://modrinth.com/mod/…'
+
+  - type: dropdown
+    id: action
+    attributes:
+      label: What should we do?
+      options:
+        - Add it
+        - Remove it
+        - Update it
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why?
+      description: What does it add for the server? Anything it might conflict with?
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **Heads-up:** this pack is Minecraft 1.21.1 on NeoForge. Fabric-only mods can
+        sometimes work through Sinytra Connector (already installed), but not always.

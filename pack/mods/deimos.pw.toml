@@ -1,0 +1,13 @@
+name = "Deimos"
+filename = "deimos-1.21.1-neoforge-2.7.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/WQaxNzFg/versions/COaBPCdu/deimos-1.21.1-neoforge-2.7.jar"
+hash-format = "sha512"
+hash = "a70fc4dfe594d10367961b227e4b22e1c69173287f012837130d177b6393b2b7e7293b73d1fd4f0345639ed9f0c8090f875177bad2138b787597faf47ec16e8d"
+
+[update]
+[update.modrinth]
+mod-id = "WQaxNzFg"
+version = "COaBPCdu"

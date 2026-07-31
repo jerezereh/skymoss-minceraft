@@ -1,0 +1,32 @@
+{
+  "type": "neoorigins:condition_passive",
+  "name": "Reconstitution",
+  "description": "Water restores what violence takes. While you are standing in water or out in the rain and currently split, your mass slowly rebuilds \u2014 watch the Reconstitution bar. Each time it fills, you regain a size step and the hearts that came with it.",
+  "interval": 20,
+  "toggleable": false,
+  "condition": {
+    "type": "neoorigins:and",
+    "conditions": [
+      {
+        "type": "neoorigins:or",
+        "conditions": [
+          { "type": "neoorigins:in_water" },
+          { "type": "neoorigins:in_rain" }
+        ]
+      },
+      {
+        "type": "neoorigins:or",
+        "conditions": [
+          { "type": "neoorigins:power_active", "power": "slimekin:split_flag_medium" },
+          { "type": "neoorigins:power_active", "power": "slimekin:split_flag_small" }
+        ]
+      }
+    ]
+  },
+  "entity_action": {
+    "type": "neoorigins:change_resource",
+    "resource": "slimekin:regrowth",
+    "operation": "add",
+    "change": 4
+  }
+}

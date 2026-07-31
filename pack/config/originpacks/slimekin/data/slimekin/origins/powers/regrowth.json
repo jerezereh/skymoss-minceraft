@@ -1,0 +1,18 @@
+{
+  "type": "neoorigins:resource",
+  "hidden": true,
+  "min": 0,
+  "max": 100,
+  "start_value": 0,
+  "hud_render": {
+    "label": "Reconstitution",
+    "color": "#6CE04A",
+    "condition": {
+      "type": "neoorigins:or",
+      "conditions": [
+        { "type": "neoorigins:power_active", "power": "slimekin:split_flag_medium" },
+        { "type": "neoorigins:power_active", "power": "slimekin:split_flag_small" }
+      ]
+    }
+  }
+}

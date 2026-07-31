@@ -1,0 +1,13 @@
+name = "Skymoss"
+author = "jerezereh"
+version = "0.1.0"
+pack-format = "packwiz:1.1.0"
+
+[index]
+file = "index.toml"
+hash-format = "sha256"
+hash = "d9da5b768c6d14ff54ff348e99bb0e5dc66ce114241b135228aaca78523216d5"
+
+[versions]
+minecraft = "1.21.1"
+neoforge = "21.1.241"

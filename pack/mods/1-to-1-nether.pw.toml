@@ -1,0 +1,13 @@
+name = "1:1 Nether"
+filename = "1-to-1-nether-0.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/n8u2QC56/versions/Uez1hGJk/1-to-1-nether-0.1.jar"
+hash-format = "sha512"
+hash = "3dcf865c3c019df0fe496b1392b41345a810f7cea2aee32ee47028a05630b2853d3a025321bc9ca8b119f6159fbb9829662b19a47deac9625e26f82e4ef93322"
+
+[update]
+[update.modrinth]
+mod-id = "n8u2QC56"
+version = "Uez1hGJk"

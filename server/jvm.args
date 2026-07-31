@@ -1,0 +1,38 @@
+# JVM flags for the Skymoss server (Java 21).
+#
+# Consumed via JVM_OPTS in infra/docker-compose.yml. Heap size is set separately
+# through the MEMORY env var so it can be tuned per host without editing this file.
+#
+# These are the Aikar-derived G1 flags, which remain the standard baseline for
+# modded servers: they trade a little throughput for much shorter GC pauses, which
+# is what actually matters when a pause shows up to players as a lag spike.
+
+-XX:+UseG1GC
+-XX:+ParallelRefProcEnabled
+-XX:MaxGCPauseMillis=200
+-XX:+UnlockExperimentalVMOptions
+-XX:+DisableExplicitGC
+-XX:+AlwaysPreTouch
+-XX:G1NewSizePercent=30
+-XX:G1MaxNewSizePercent=40
+-XX:G1HeapRegionSize=8M
+-XX:G1ReservePercent=20
+-XX:G1HeapWastePercent=5
+-XX:G1MixedGCCountTarget=4
+-XX:InitiatingHeapOccupancyPercent=15
+-XX:G1MixedGCLiveThresholdPercent=90
+-XX:G1RSetUpdatingPauseTimePercent=5
+-XX:SurvivorRatio=32
+-XX:+PerfDisableSharedMem
+-XX:MaxTenuringThreshold=1
+
+# Mixin-heavy packs benefit from a larger metaspace; the default forces repeated
+# metaspace GCs during mod load.
+-XX:MetaspaceSize=256m
+-XX:MaxMetaspaceSize=512m
+
+# Fail fast and loudly rather than limping on after an OOM.
+-XX:+ExitOnOutOfMemoryError
+
+-Dfml.readTimeout=180
+-Dfile.encoding=UTF-8

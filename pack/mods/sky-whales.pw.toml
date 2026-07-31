@@ -1,0 +1,13 @@
+name = "Sky Whales"
+filename = "skywhales-0.1.8.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/IielEDnJ/versions/CcjnSrPq/skywhales-0.1.8.jar"
+hash-format = "sha512"
+hash = "726a748bb13acb9fd27ea08893d149d3784ef9d0c74846e223ee3a4ce383fdf26385744050d1cdb718531c10ae0f320230ad764604ed76e8405ff4ed04829405"
+
+[update]
+[update.modrinth]
+mod-id = "IielEDnJ"
+version = "CcjnSrPq"

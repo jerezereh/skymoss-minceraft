@@ -1,0 +1,13 @@
+name = "Velvet"
+filename = "Velvet-NeoForge-0.5.1.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/9n0mp5VS/versions/iyQS3jcO/Velvet-NeoForge-0.5.1.jar"
+hash-format = "sha512"
+hash = "df7b799994721d3a6b84de7e1023aaa7b9952c23d1e8be849959e3905e016f3dc2653b3662aea63f2b77673f0dee4e14a9d6d3ea102dab8c04d95a24423b5b2b"
+
+[update]
+[update.modrinth]
+mod-id = "9n0mp5VS"
+version = "iyQS3jcO"

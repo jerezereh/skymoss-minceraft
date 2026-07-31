@@ -1,0 +1,11 @@
+{
+  "split_cooldown": false,
+  "positions": {
+    "neoorigins:cooldown_cluster": {
+      "xPct": 0.47926712,
+      "yPct": 0.85903084,
+      "scale": 1.0,
+      "vertical": false
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "neoorigins:action_on_event",
+  "name": "Acidic Residue",
+  "description": "Your hide weeps a weak digestive acid. Anything that strikes you takes back 10% of the damage it dealt. The acid grows more caustic as you mature.",
+  "event": "hit_taken",
+  "entity_action": {
+    "type": "neoorigins:damage_attacker",
+    "amount_ratio": 0.10,
+    "source": { "name": "magic" }
+  }
+}

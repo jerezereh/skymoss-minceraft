@@ -1,0 +1,31 @@
+name: Notify CI results
+
+# Relays the outcome of the validation workflow into Discord, so pack changes are
+# visible to people who never open GitHub.
+#
+# Uses workflow_run rather than a step inside pack-validate: that way a notification
+# is sent even when the validation run fails early, and the secret is never exposed
+# to workflows triggered by forked pull requests.
+
+on:
+  workflow_run:
+    workflows: ['Validate pack']
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Post result to bridge
+        env:
+          BRIDGE_URL: ${{ secrets.BRIDGE_URL }}
+          CI_EVENT_SECRET: ${{ secrets.CI_EVENT_SECRET }}
+        run: |
+          ./.github/scripts/notify-bridge.sh \
+            --kind ci \
+            --status "${{ github.event.workflow_run.conclusion }}" \
+            --name "${{ github.event.workflow_run.name }}" \
+            --detail "branch \`${{ github.event.workflow_run.head_branch }}\`" \
+            --url "${{ github.event.workflow_run.html_url }}"

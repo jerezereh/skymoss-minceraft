@@ -1,0 +1,123 @@
+name: Validate pack
+
+on:
+  pull_request:
+    paths:
+      - 'pack/**'
+      - 'overlays/**'
+      - 'server/**'
+      - 'tools/**'
+      - '.github/workflows/pack-validate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pack/**'
+      - 'overlays/**'
+      - 'server/**'
+      - 'tools/**'
+  workflow_dispatch:
+
+jobs:
+  index:
+    name: Index is current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Fails if someone edited pack/ without regenerating index.toml, which would
+      # otherwise ship a manifest whose hashes no longer match its own contents.
+      - name: Check index freshness
+        run: node tools/build-index.ts --check
+
+  packwiz:
+    name: packwiz agrees with our index
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      # packwiz publishes no tagged binaries, so it is installed from source. This
+      # job is what keeps tools/build-index.ts honest: if our generator and the
+      # reference implementation ever disagree, the diff shows up here.
+      - name: Install packwiz
+        run: go install github.com/packwiz/packwiz@latest
+
+      - name: Refresh and diff
+        working-directory: pack
+        run: |
+          packwiz refresh
+          if ! git diff --exit-code -- index.toml pack.toml; then
+            echo "::error::packwiz refresh produced a different index than tools/build-index.ts"
+            exit 1
+          fi
+
+  metadata:
+    name: Manifest sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate side flags and download URLs
+        run: node tools/validate-pack.ts
+
+      - name: Loader versions match server pin
+        run: |
+          set -euo pipefail
+          pack_mc=$(sed -n 's/^minecraft = "\(.*\)"$/\1/p' pack/pack.toml)
+          pack_nf=$(sed -n 's/^neoforge = "\(.*\)"$/\1/p' pack/pack.toml)
+          srv_mc=$(sed -n 's/^MINECRAFT_VERSION=\(.*\)$/\1/p' server/neoforge.version)
+          srv_nf=$(sed -n 's/^NEOFORGE_VERSION=\(.*\)$/\1/p' server/neoforge.version)
+
+          echo "pack:   mc=$pack_mc neoforge=$pack_nf"
+          echo "server: mc=$srv_mc neoforge=$srv_nf"
+
+          # A drift here means the server would install a different loader than the
+          # client pack was built against — a confusing, hard-to-diagnose failure.
+          [ "$pack_mc" = "$srv_mc" ] || { echo "::error::minecraft version mismatch"; exit 1; }
+          [ "$pack_nf" = "$srv_nf" ] || { echo "::error::neoforge version mismatch"; exit 1; }
+
+  mirror:
+    name: Mirror liveness
+    runs-on: ubuntu-latest
+    # Informational: upstream CDNs return transient 5xx and a flaky external check
+    # should not block a merge. The point is early warning, not a gate.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: HEAD every download URL
+        run: node tools/check-urls.ts
+
+  bridge:
+    name: Bridge tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bridge
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: bridge/package-lock.json
+
+      - run: npm ci || npm install
+      - run: npx tsc --noEmit
+      - run: node --experimental-strip-types --test src/*.test.ts

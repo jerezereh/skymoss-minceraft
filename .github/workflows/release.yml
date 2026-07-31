@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (without leading v)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  build-client:
+    name: Client (.mrpack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install packwiz
+        run: go install github.com/packwiz/packwiz@latest
+
+      - name: Resolve version
+        id: v
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Overlays are layered into the pack tree before export. packwiz exports whatever
+      # is in the pack directory, so this is how client-only files (options.txt, e4mc
+      # config) reach the client artifact without polluting the shared manifest.
+      - name: Apply client overlay
+        run: |
+          if [ -d overlays/client ]; then
+            cp -a overlays/client/. pack/
+          fi
+
+      - name: Stamp version
+        working-directory: pack
+        run: sed -i "s/^version = .*/version = \"${{ steps.v.outputs.version }}\"/" pack.toml
+
+      - name: Export
+        working-directory: pack
+        run: |
+          packwiz refresh
+          packwiz modrinth export -o "../Skymoss-${{ steps.v.outputs.version }}.mrpack"
+
+      - name: Summarise
+        run: |
+          ls -la Skymoss-*.mrpack
+          echo "### Client pack" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`Skymoss-${{ steps.v.outputs.version }}.mrpack\` ($(du -h Skymoss-*.mrpack | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client
+          path: Skymoss-*.mrpack
+
+  # ---------------------------------------------------------------------------
+  build-server:
+    name: Server bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: v
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The server bundle deliberately contains no jars. It carries the manifest and
+      # the config needed to stand the server up; the container resolves mods from
+      # PACKWIZ_URL on boot, filtering to server-side entries.
+      - name: Assemble bundle
+        run: |
+          set -euo pipefail
+          V="${{ steps.v.outputs.version }}"
+          OUT="skymoss-server-${V}"
+          mkdir -p "$OUT"
+
+          cp -a pack "$OUT/pack"
+          if [ -d overlays/server ]; then
+            cp -a overlays/server/. "$OUT/pack/"
+          fi
+
+          cp -a server "$OUT/server"
+          mkdir -p "$OUT/infra"
+          cp infra/docker-compose.yml infra/.env.example "$OUT/infra/"
+          cp -a infra/caddy "$OUT/infra/caddy"
+          cp -a infra/backup "$OUT/infra/backup"
+          cp docs/server-setup.md "$OUT/README.md" 2>/dev/null || echo "See docs/server-setup.md" > "$OUT/README.md"
+
+          sed -i "s/^version = .*/version = \"$V\"/" "$OUT/pack/pack.toml"
+
+          tar -czf "${OUT}.tar.gz" "$OUT"
+          ls -la "${OUT}.tar.gz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server
+          path: skymoss-server-*.tar.gz
+
+  # ---------------------------------------------------------------------------
+  publish:
+    name: Publish release
+    needs: [build-client, build-server]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Flatten
+        run: find dist -type f \( -name '*.mrpack' -o -name '*.tar.gz' \) -exec mv {} . \;
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Skymoss-*.mrpack
+            skymoss-server-*.tar.gz
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            **Client** — download the `.mrpack` and import it into
+            [Prism Launcher](https://prismlauncher.org/) or the Modrinth App.
+
+            **Server** — download the `.tar.gz`, then see `README.md` inside it.
+
+            Neither artifact contains mod jars; both resolve mods from the manifest at
+            install time and verify each download against a pinned hash.
+
+  # ---------------------------------------------------------------------------
+  notify:
+    name: Notify Discord
+    needs: [publish]
+    runs-on: ubuntu-latest
+    if: always() && startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Post to bridge
+        env:
+          BRIDGE_URL: ${{ secrets.BRIDGE_URL }}
+          CI_EVENT_SECRET: ${{ secrets.CI_EVENT_SECRET }}
+        run: |
+          ./.github/scripts/notify-bridge.sh \
+            --kind release \
+            --status "${{ needs.publish.result }}" \
+            --name "Release ${GITHUB_REF_NAME}" \
+            --version "${GITHUB_REF_NAME#v}" \
+            --url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"

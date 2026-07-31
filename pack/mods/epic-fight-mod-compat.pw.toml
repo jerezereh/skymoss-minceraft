@@ -1,0 +1,13 @@
+name = "Epic Fight - Mod Compat"
+filename = "epicfightcompat-1.1.0-mc1.21.1-neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hjgBurqe/versions/tI0fnvPU/epicfightcompat-1.1.0-mc1.21.1-neoforge.jar"
+hash-format = "sha512"
+hash = "c0584e740636bc58fbedae69b577c3636f765b4bd014cc7f6ab33d6feee476f6e9c58e7b0ce07d7e35f66eee17763dd88c450d3c0058ce0f51fbe1459a460b61"
+
+[update]
+[update.modrinth]
+mod-id = "hjgBurqe"
+version = "tI0fnvPU"

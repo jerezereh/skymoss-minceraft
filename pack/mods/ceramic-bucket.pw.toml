@@ -1,0 +1,13 @@
+name = "Ceramic Bucket"
+filename = "ceramicbucket-neoforge-1.21-6.1.1.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/M9G5zpf1/versions/gkeSClj3/ceramicbucket-neoforge-1.21-6.1.1.0.jar"
+hash-format = "sha512"
+hash = "ecf84276c46ac9616190ee6bf9ff46d7b2de7b01f65f00546c061353ca2d05f381dafb129cfe21fd767c863a468a447049fe0f9b7147cd29e3c81dc53aa7e61e"
+
+[update]
+[update.modrinth]
+mod-id = "M9G5zpf1"
+version = "gkeSClj3"

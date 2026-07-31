@@ -1,0 +1,25 @@
+[general]
+	#Hide Smithing Trim items in JEI Item Panel.
+	#Default: true
+	hideTemplateItems = true
+	#Hide Smithing Trim recipes in JEI Usage View.
+	#Default: true
+	hideTrimRecipes = true
+
+[overrides]
+	#Note: If the following lists are modified in-game, JEI item panel and smithing recipes will update immediately,
+	#      but Info pages require re-entering the world to take effect.
+	# 
+	#=== Whitelist ===
+	#Items in this list will be exempt from hiding logic.
+	#Used to keep specific trim templates visible.
+	#Format: ["modid:item_name"]
+	whitelist = []
+	#=== Custom Trims ===
+	#By default, this mod automatically identifies trims via the minecraft:trim_templates tag.
+	#For mods without standard tags, you can expand the scope here.
+	#Supported formats:
+	#1. Exact match: ["modid:item_name"], apply to specific items.
+	#2. Range match: ["modid"], ALL items under this mod will be treated as trims.
+	#   Use range match ONLY if you are sure the mod only adds trims.
+	customTrims = []

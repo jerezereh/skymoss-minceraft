@@ -1,0 +1,9 @@
+{
+  "type": "neoorigins:model_color",
+  "name": "Verdant Hide",
+  "description": "Your gel-green body is faintly see-through, marking you as something less than solid.",
+  "red": 0.55,
+  "green": 0.95,
+  "blue": 0.45,
+  "alpha": 0.65
+}

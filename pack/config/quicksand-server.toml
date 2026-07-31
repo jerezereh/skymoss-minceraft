@@ -1,0 +1,9 @@
+[gameplay]
+	#When enabled, Quicksand makes submerged entities drown.
+	quicksandDrownsEntities = true
+	#When enabled, Quicksand and Quicksand Cauldron can extinguish burning entities.
+	quicksandExtinguishesFire = true
+	#When enabled, Quicksand can convert submerged Zombie into Husk.
+	quicksandConvertsZombie = true
+	#When enabled, Quicksand can convert submerged Drowned into Zombie.
+	quicksandConvertsDrowned = true

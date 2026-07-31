@@ -1,0 +1,7 @@
+{
+  "type": "neoorigins:modify_damage",
+  "name": "Soft Strikes",
+  "description": "No knuckles, no claws \u2014 just gel. Your own attacks land 15% softer than they would from a solid body.",
+  "direction": "out",
+  "multiplier": 0.85
+}

@@ -1,0 +1,13 @@
+name = "Quicksand (NeoForge)"
+filename = "quicksand-2.0.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/HH5U2JMF/versions/ho31hLSY/quicksand-2.0.0.jar"
+hash-format = "sha512"
+hash = "88db9b4f702182f265198b4c8aea5307bd72defab9b12eab83605bc8fe511b506e22f9205bd46bbcef9eb70d8fba69424a6ff75ffe93c1a04804b80659d2afae"
+
+[update]
+[update.modrinth]
+mod-id = "HH5U2JMF"
+version = "ho31hLSY"

@@ -1,0 +1,45 @@
+{
+  "name": "Slimekin",
+  "description": "Descendants of the cube-shaped slimes, Slimekin are made of the same green gel and share its stubborn refusal to stay dead. You bounce instead of breaking, shrug off a share of every blow, and burn anything foolish enough to strike you. A killing blow only divides you — soak in water to pull yourself back together. Fire, however, finds you every bit as flammable as the goo you're made of.",
+  "icon": "minecraft:slime_ball",
+  "impact": "medium",
+  "order": 10,
+  "powers": [
+    "slimekin:verdant_hide",
+    "slimekin:fall_immunity",
+    "slimekin:slime_bounce",
+    "slimekin:gooey_resilience",
+    "slimekin:acidic_residue",
+    "slimekin:soft_strikes",
+    "slimekin:flammable",
+    "slimekin:split_on_death",
+    "slimekin:regrowth_soak",
+    "slimekin:split_flag_medium",
+    "slimekin:split_flag_small",
+    "slimekin:medium_form_size",
+    "slimekin:small_form_size",
+    "slimekin:medium_form_health",
+    "slimekin:small_form_health",
+    "slimekin:regrowth",
+    "slimekin:regrowth_small_to_medium",
+    "slimekin:regrowth_medium_to_full",
+    "slimekin:reset_on_respawn"
+  ],
+  "tier_powers": [
+    {
+      "tier": 1,
+      "add": ["slimekin:acidic_residue_evolved"],
+      "remove": ["slimekin:acidic_residue"]
+    },
+    {
+      "tier": 2,
+      "add": ["slimekin:acidic_residue_ascended"],
+      "remove": ["slimekin:acidic_residue_evolved"]
+    },
+    {
+      "tier": 3,
+      "add": ["slimekin:acidic_residue_apex"],
+      "remove": ["slimekin:acidic_residue_ascended"]
+    }
+  ]
+}

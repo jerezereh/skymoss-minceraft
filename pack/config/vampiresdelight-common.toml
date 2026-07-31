@@ -1,0 +1,67 @@
+[village]
+	#Should Farmers buy garlic? (May reduce chances of other trades appearing)
+	farmersBuyGarlic = true
+	#Should the Wandering Trader sell some of vampirism's and this mod's items? (Including seeds and some blocks)
+	wanderingTraderSellsVampirismItems = false
+
+[overrides]
+	#If true, all players receive food effects from Farmer's Delight food items regardless of their faction. For example vampires would still get the effects but no hunger.
+	enableFDFoodEffectsDespiteFaction = false
+	#Should this mod override the food values of all vanilla and modded items to use faction-specific properties? Enabling this option makes components from this mod usable for any item. For instance, if an item has the `vampiresdelight:vampire_food` data component, it will use the food value from the component instead of the default one for vampires. Disable this if it causes conflicts with other mods.
+	overrideFoodPropertiesForFactions = true
+
+[blocks]
+	#How often (in percentage) should Bloody Soil succeed in boosting a plant's growth at each random tick? Set it to 0.0 to disable this.
+	# Default: 0.2
+	# Range: 0.0 ~ 1.0
+	bloodySoilBoostChance = 0.2
+
+[items]
+	#Should the Alchemical Cocktail burn ground when thrown? Recommended to set this to "false" on servers with claims.
+	alchemicalCocktailBurnsGround = true
+	#What should be the radius of Alchemical Cocktail fire splash?
+	# Default: 3.5
+	# Range: 1.0 ~ 99.0
+	alchemicalCocktailSplashRadius = 3.5
+	#What should be the maximum stack size of the Alchemical Cocktail?
+	# Default: 8
+	# Range: 1 ~ 99
+	alchemicalCocktailStackSize = 8
+
+[effects]
+	#Should the Weird Jelly Sunscreen effect be replaced with Jump Boost?
+	replaceWeirdJellySunscreenWithJumpBoost = false
+	#Should the bat meat and food made of it have chance of giving Wither effect when eaten by humans? Otherwise, it would poison the player and not wither.
+	batMeatWithersHumans = true
+	#Should the blessing effect banish ghosts just like phantoms?
+	blessingHelpsAgainstGhosts = true
+	#Should "weak" armor such as leather and chain dissolve fully because of Clothes Dissolving effect?
+	armorDissolvesFully = true
+
+[enchantments]
+	#What should be the maximum amount of hearts that Vampire Bite enchantment should heal?
+	# Default: 1.5
+	# Range: 0.5 ~ 10.0
+	vampireBiteMaxHealingValue = 1.5
+	#With what chance should Vampire Bite enchantment regenerate health?
+	# Default: 25
+	# Range: 1 ~ 100
+	vampireBiteChanceLevel1 = 25
+	# Default: 30
+	# Range: 1 ~ 100
+	vampireBiteChanceLevel2 = 30
+	# Default: 35
+	# Range: 1 ~ 100
+	vampireBiteChanceLevel3 = 35
+
+[world]
+	#Should this mod add some of its items as extra chest loot across Minecraft and Vampirism structures?
+	generateVDChestLoot = true
+	#Should a Cooking Pot on a Campfire/Fire Place be generated in hunter camps?
+	generateCookingPotInHunterCamp = true
+	#Should a Cooking Pot be generated on the campfire near hunter camps? By default it's generated on the Campfire/Fire Place in the middle of it.
+	generateCookingPotNearHunterCamp = false
+	#With what chance should a Cooking Pot on a Campfire/Fire Place be generated in hunter camps?
+	# Default: 40
+	# Range: 1 ~ 100
+	cookingPotInHunterCampSpawnChance = 40

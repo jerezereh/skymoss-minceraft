@@ -1,0 +1,222 @@
+# Skymoss — the whole stack, on one Ubuntu host.
+#
+#   mc          the dedicated server; installs the pack from the manifest on boot
+#   bridge      Discord <-> GitHub relay
+#   mirror      Caddy, serving the pack manifest + mod jars over HTTPS
+#   cloudflared tunnel providing public HTTPS for the mirror and GitHub webhooks
+#
+# Nothing here listens on a public port directly except the Minecraft port; the
+# tunnel handles ingress for everything HTTP, so the host needs no inbound
+# firewall rules for the web services.
+#
+#   cp .env.example .env   # fill in secrets first
+#   docker compose up -d
+
+name: skymoss
+
+services:
+  # ---------------------------------------------------------------------------
+  # Minecraft dedicated server
+  # ---------------------------------------------------------------------------
+  mc:
+    image: itzg/minecraft-server:java21
+    container_name: skymoss-mc
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    ports:
+      - "25565:25565"
+    environment:
+      EULA: "TRUE"
+      TYPE: NEOFORGE
+      VERSION: "${MINECRAFT_VERSION:-1.21.1}"
+      NEOFORGE_VERSION: "${NEOFORGE_VERSION:-21.1.241}"
+
+      # The pack installs itself from the manifest. packwiz-installer filters to
+      # server-side entries, so client-only mods (sodium, iris, …) never land here.
+      #
+      # This points at the mirror over the internal compose network, so the pack
+      # install needs no public hostname and no domain. Only override it if you are
+      # deliberately serving the manifest from somewhere external.
+      PACKWIZ_URL: "${PACKWIZ_URL:-http://mirror/pack/pack.toml}"
+
+      MEMORY: "${MC_MEMORY:-8G}"
+      USE_AIKAR_FLAGS: "false"   # we supply our own in server/jvm.args
+      JVM_OPTS: "${MC_JVM_OPTS:-}"
+
+      # Overwrite server.properties from our tracked copy on every boot, so the
+      # repo stays the source of truth rather than drifting from the live file.
+      OVERRIDE_SERVER_PROPERTIES: "true"
+
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "${RCON_PASSWORD:?set RCON_PASSWORD}"
+      RCON_PORT: "25575"
+
+      # Modded servers routinely exceed the default startup budget on first run,
+      # when the pack is downloading and mods are being scanned.
+      MAX_TICK_TIME: "-1"
+      SETUP_ONLY: "false"
+      TZ: "${TZ:-America/Los_Angeles}"
+    volumes:
+      - mc-data:/data
+      - ../server/server.properties:/config/server.properties:ro
+      - ../server/jvm.args:/config/jvm.args:ro
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      # First boot downloads ~400 MB of mods and builds the mod cache; the long
+      # start_period stops the healthcheck from flapping the container before
+      # the server has ever finished loading.
+      start_period: 10m
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Discord <-> GitHub bridge
+  # ---------------------------------------------------------------------------
+  bridge:
+    build:
+      context: ../bridge
+    container_name: skymoss-bridge
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_PATH: /data/bridge.db
+
+      DISCORD_TOKEN: "${DISCORD_TOKEN:?set DISCORD_TOKEN}"
+      DISCORD_GUILD_ID: "${DISCORD_GUILD_ID:?set DISCORD_GUILD_ID}"
+      DISCORD_ISSUE_CHANNEL_ID: "${DISCORD_ISSUE_CHANNEL_ID:?set DISCORD_ISSUE_CHANNEL_ID}"
+      DISCORD_CI_CHANNEL_ID: "${DISCORD_CI_CHANNEL_ID:?set DISCORD_CI_CHANNEL_ID}"
+
+      GITHUB_TOKEN: "${GITHUB_TOKEN:?set GITHUB_TOKEN}"
+      GITHUB_REPO: "${GITHUB_REPO:-jerezereh/skymoss-minceraft}"
+
+      # Webhooks need a public hostname to deliver to. With no domain, leave this
+      # empty — the /webhook/github route then refuses requests rather than
+      # accepting unverified ones, and polling below covers GitHub→Discord.
+      GITHUB_WEBHOOK_SECRET: "${GITHUB_WEBHOOK_SECRET:-}"
+
+      # Seconds between GitHub polls; 0 disables. Safe to run alongside webhooks —
+      # message_links dedups whichever path sees an event second.
+      GITHUB_POLL_INTERVAL: "${GITHUB_POLL_INTERVAL:-60}"
+
+      CI_EVENT_SECRET: "${CI_EVENT_SECRET:?set CI_EVENT_SECRET}"
+
+      # Bearer token for /alerts. Monitoring tools send unsigned webhooks, so this
+      # endpoint uses a token rather than the HMAC scheme used for CI events.
+      ALERT_TOKEN: "${ALERT_TOKEN:-}"
+
+      # Server admin commands. RCON is reached over the compose network, so the
+      # port is never published to the host.
+      RCON_HOST: mc
+      RCON_PORT: "25575"
+      RCON_PASSWORD: "${RCON_PASSWORD:?set RCON_PASSWORD}"
+
+      # Role allowed to run /restart and /cmd. Unset means nobody can — /cmd is a
+      # full server console.
+      ADMIN_ROLE_ID: "${ADMIN_ROLE_ID:-}"
+    volumes:
+      - bridge-data:/data
+    depends_on:
+      - mc
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Mod + manifest mirror
+  # ---------------------------------------------------------------------------
+  # Serves /srv/mirror: the pack manifest and every jar it references. This is what
+  # makes the pack survive a mod being deleted upstream — and it is the ONLY source
+  # for the three bespoke jars that exist nowhere else.
+  mirror:
+    image: caddy:2-alpine
+    container_name: skymoss-mirror
+    restart: unless-stopped
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${MIRROR_ROOT:-/srv/mirror}:/srv/mirror:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # ---------------------------------------------------------------------------
+  # Monitoring
+  # ---------------------------------------------------------------------------
+  # Uptime Kuma watches the Minecraft port, the bridge, and the mirror, and posts
+  # state changes to the bridge's /alerts endpoint, which renders them into the same
+  # Discord channel CI results go to.
+  #
+  # Deliberately NOT a management panel: Crafty and Pelican want to own the server
+  # lifecycle and its files, which would fight the manifest-and-git pipeline (configs
+  # are rewritten from the repo on every boot, so panel edits would silently revert).
+  # This watches and alerts; /restart and /cmd on the bot cover the control side.
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: skymoss-uptime
+    restart: unless-stopped
+    # Bound to loopback, not 0.0.0.0: this is an admin UI with no domain in front of
+    # it. Reach it over SSH (`ssh -L 3001:localhost:3001 host`) or your tailnet.
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - uptime-kuma-data:/app/data
+    depends_on:
+      - bridge
+
+  # ---------------------------------------------------------------------------
+  # Player ingress
+  # ---------------------------------------------------------------------------
+  # Cloudflare Tunnel cannot carry Minecraft: the protocol is raw TCP, and Cloudflare
+  # only proxies arbitrary TCP on the Enterprise-tier Spectrum product. The usual
+  # workaround requires every player to run `cloudflared access tcp` locally.
+  #
+  # playit.gg tunnels TCP directly, runs only on this host, works behind CGNAT, and
+  # gives players a plain address to type. Nothing to install on their side.
+  #
+  # First run prints a claim URL in the logs; approve it, then create a Minecraft
+  # tunnel in the dashboard pointing at 127.0.0.1:25565.
+  playit:
+    image: ghcr.io/playit-cloud/playit-agent:0.15
+    container_name: skymoss-playit
+    restart: unless-stopped
+    # Host networking so the agent can reach the published Minecraft port on
+    # 127.0.0.1 and dial out to playit's relays.
+    network_mode: host
+    environment:
+      SECRET_KEY: "${PLAYIT_SECRET_KEY:-}"
+    depends_on:
+      - mc
+
+  # ---------------------------------------------------------------------------
+  # Public HTTPS ingress (optional)
+  # ---------------------------------------------------------------------------
+  # Opt-in, because it is only useful if you own a domain on Cloudflare — named
+  # tunnel hostnames require a zone, and quick-tunnel URLs change on every restart.
+  #
+  # Without a domain none of this is needed: the server installs the pack over the
+  # internal network, and the bridge polls GitHub instead of receiving webhooks.
+  #
+  # To enable:  docker compose --profile tunnel up -d
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: skymoss-tunnel
+    restart: unless-stopped
+    profiles: [tunnel]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:-}"
+    depends_on:
+      - mirror
+      - bridge
+      - uptime-kuma
+
+volumes:
+  mc-data:
+  bridge-data:
+  caddy-data:
+  caddy-config:
+  uptime-kuma-data:

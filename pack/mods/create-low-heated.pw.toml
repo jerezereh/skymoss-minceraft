@@ -1,0 +1,13 @@
+name = "Create Low-Heated"
+filename = "createlowheated-neoforge-1.21.1-6.0.10-2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hd0gHVlC/versions/o0s0ljR0/createlowheated-neoforge-1.21.1-6.0.10-2.jar"
+hash-format = "sha512"
+hash = "70fba342a012c4aa8f35fd7670498f4e5723dd78a20bf6943bbd1449d10b2522269c6d1428575ed2a5a98745fecdd21ca9dcf472f8d247f1d85df1808dd41d6e"
+
+[update]
+[update.modrinth]
+mod-id = "hd0gHVlC"
+version = "o0s0ljR0"

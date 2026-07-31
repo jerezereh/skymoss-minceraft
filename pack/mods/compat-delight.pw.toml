@@ -1,0 +1,13 @@
+name = "Compat Delight"
+filename = "compatdelight-1.0.1.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/iNJJU8Ib/versions/lBjjKnwQ/compatdelight-1.0.1.1.jar"
+hash-format = "sha512"
+hash = "b3b0693287a939db42836d176512081583655fab902a6afabbe8d77a37308e51a0057bb937a44618e77b12efbfd69cf75284865237428a6c08c7012a761c268c"
+
+[update]
+[update.modrinth]
+mod-id = "iNJJU8Ib"
+version = "lBjjKnwQ"

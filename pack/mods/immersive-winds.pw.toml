@@ -1,0 +1,13 @@
+name = "Immersive Winds"
+filename = "immersive-winds-1.21.1-0.9.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/smYLXoRt/versions/KggPLdvg/immersive-winds-1.21.1-0.9.jar"
+hash-format = "sha512"
+hash = "7cc603bc16b0d1cf7751c4f6597aff5e3049a261f73785c30ace06091ac5f6cf88afe652ff4806501d5ae67378dd9a83fafdde3efae18d4a22431baf3e45c51a"
+
+[update]
+[update.modrinth]
+mod-id = "smYLXoRt"
+version = "KggPLdvg"

@@ -1,0 +1,53 @@
+name: Sync mirror
+
+# Publishes every jar the manifest references to the mirror on the Ubuntu host.
+#
+# This runs on a SELF-HOSTED runner because the mirror lives on your local server,
+# which GitHub-hosted runners cannot reach. Set the runner up on that box with the
+# label `skymoss` (see docs/server-setup.md § Self-hosted runner). Until then, run
+# tools/sync-mirror.sh on the box by hand.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pack/mods/**'
+      - 'pack/pack.toml'
+      - 'pack/index.toml'
+  workflow_dispatch:
+    inputs:
+      jar_dir:
+        description: 'Directory of jars to publish from'
+        required: false
+        default: '/srv/skymoss-jars'
+
+jobs:
+  sync:
+    runs-on: [self-hosted, skymoss]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish to mirror
+        env:
+          JAR_DIR: ${{ inputs.jar_dir || '/srv/skymoss-jars' }}
+          MIRROR_ROOT: ${{ vars.MIRROR_ROOT || '/srv/mirror' }}
+        run: |
+          # sync-mirror verifies every jar against its manifest hash before copying,
+          # and exits non-zero if anything is missing or mismatched — so a partial
+          # mirror fails the job instead of silently shipping a broken pack.
+          bash tools/sync-mirror.sh "$JAR_DIR" "$MIRROR_ROOT"
+
+      - name: Verify published URLs resolve
+        run: node tools/check-urls.ts --fail-on-dead
+
+      - name: Notify
+        if: always()
+        env:
+          BRIDGE_URL: ${{ secrets.BRIDGE_URL }}
+          CI_EVENT_SECRET: ${{ secrets.CI_EVENT_SECRET }}
+        run: |
+          ./.github/scripts/notify-bridge.sh \
+            --kind mirror-sync \
+            --status "${{ job.status }}" \
+            --name "Mirror sync" \
+            --url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

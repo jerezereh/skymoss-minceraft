@@ -1,0 +1,13 @@
+name = "JEI Trim Hider"
+filename = "jei_trim_hider-1.0.2-NeoForge-1.21.1.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/mgJmej0q/versions/zjqLSxzp/jei_trim_hider-1.0.2-NeoForge-1.21.1.jar"
+hash-format = "sha512"
+hash = "4e0c5b19623cbf280213d6e40f26493a71dcb91395097fe0a77fd5c40d11df16a0eaf1c6b8cdf43be3dd3c59ea2500fc6829c182cac66655c2b6623dd7a44a05"
+
+[update]
+[update.modrinth]
+mod-id = "mgJmej0q"
+version = "zjqLSxzp"

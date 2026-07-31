@@ -1,0 +1,14 @@
+# HAND-WRITTEN — not resolvable from Modrinth or CurseForge.
+# Bespoke patch jar (modId kp_enchant_fix) that exists nowhere upstream. Served from
+# a GitHub release rather than the mirror: it is our own build, not redistributed
+# third-party code, so hosting it here is fine — and a release asset is a stable,
+# backed-up URL that needs no domain.
+# Requires the `orphan-mods-v1` release to exist; see docs/pack-workflow.md § Orphan mods.
+name = "Kitchen Projectiles Enchantment Fix"
+filename = "KPEnchantFix-neoforge-mod.jar"
+side = "both"
+
+[download]
+url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/orphan-mods-v1/KPEnchantFix-neoforge-mod.jar"
+hash-format = "sha512"
+hash = "31070354e35a4f38c7f9418d1a828232c13529f896de7118b3c63094f4e6bf2917befcd0200653272d762e353fd3fbaecb528eabbfd6bad8eafc46b2f802b44d"

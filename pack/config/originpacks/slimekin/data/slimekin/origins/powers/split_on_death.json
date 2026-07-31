@@ -1,0 +1,40 @@
+{
+  "type": "neoorigins:prevent_death",
+  "name": "Splitting Instinct",
+  "description": "A killing blow doesn't end you \u2014 it divides you. The first fatal hit sheds mass and leaves you at three-quarters size with 7 hearts; the second leaves you at half size with 4 hearts. A third fatal blow at half size is final, exactly like the smallest slime. Soak in water or rain to reconstitute.",
+  "condition": {
+    "type": "neoorigins:power_active",
+    "power": "slimekin:split_flag_small",
+    "inverted": true
+  },
+  "set_health": 6.0,
+  "cooldown_ticks": 0,
+  "entity_action": {
+    "type": "neoorigins:and",
+    "actions": [
+      { "type": "neoorigins:extinguish" },
+      { "type": "neoorigins:change_resource", "resource": "slimekin:regrowth", "operation": "set", "change": 0 },
+      {
+        "type": "neoorigins:if_else",
+        "condition": {
+          "type": "neoorigins:power_active",
+          "power": "slimekin:split_flag_medium"
+        },
+        "if_action": {
+          "type": "neoorigins:and",
+          "actions": [
+            { "type": "neoorigins:toggle", "power": "slimekin:split_flag_small", "value": true },
+            { "type": "neoorigins:play_sound", "sound": "minecraft:entity.slime.squish_small", "volume": 1.0, "pitch": 0.8 }
+          ]
+        },
+        "else_action": {
+          "type": "neoorigins:and",
+          "actions": [
+            { "type": "neoorigins:toggle", "power": "slimekin:split_flag_medium", "value": true },
+            { "type": "neoorigins:play_sound", "sound": "minecraft:entity.slime.squish", "volume": 1.0, "pitch": 1.0 }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+name = "Create Aeronautics: Throwable Rope Connector"
+filename = "create_aeronautics_throwable_rope_connector-0.4.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/9xiCbKmM/versions/DDvarpaZ/create_aeronautics_throwable_rope_connector-0.4.1.jar"
+hash-format = "sha512"
+hash = "660fe5823b375a9abeba2f76fb628bdbcb308274d6d6debef13d1d17702e2b4728eba2c596b2fe0c9bca693d09d4da51da3e22c08b049cc1a3ae6b758d467be8"
+
+[update]
+[update.modrinth]
+mod-id = "9xiCbKmM"
+version = "DDvarpaZ"

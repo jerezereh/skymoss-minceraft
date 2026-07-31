@@ -1,0 +1,39 @@
+# Skymoss mod + manifest mirror.
+#
+# TLS is terminated by Cloudflare at the tunnel edge, so Caddy speaks plain HTTP
+# on :80 inside the compose network and is never exposed directly.
+
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	root * /srv/mirror
+
+	# Long cache lifetimes are safe because every URL is version-pinned: a jar's
+	# filename contains its version, so contents never change under a given URL.
+	# The manifest itself must not be cached that way or clients would keep
+	# installing a stale pack after a release.
+	@immutable {
+		path /mods/*
+	}
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	@manifest {
+		path /pack/*
+	}
+	header @manifest Cache-Control "public, max-age=60"
+
+	# CORS so packwiz-installer and browser-based tooling can fetch the manifest.
+	header Access-Control-Allow-Origin "*"
+
+	file_server {
+		precompressed gzip
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

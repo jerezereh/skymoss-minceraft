@@ -1,0 +1,6 @@
+# Pinned loader versions for the Skymoss dedicated server.
+# Read by infra/docker-compose.yml and the release workflows. Keep in sync with
+# pack/pack.toml [versions] — pack-validate.yml fails the build if they diverge.
+MINECRAFT_VERSION=1.21.1
+NEOFORGE_VERSION=21.1.241
+JAVA_VERSION=21

@@ -1,0 +1,41 @@
+[general]
+	#How much should Spirit Lantern multiply the visibility in fog? Set to 0.0 if you want to disable it at all. The multiplier is not multiplied by the value, but added to it. So if the value is 0.4, 40% will be added to the distance.
+	# Default: 0.4
+	# Range: 0.0 ~ 10.0
+	spiritLanternFogDistanceMultiplier = 0.4
+
+[tooltips]
+	#Should the mod change the color of tooltips?
+	coloredTooltips = true
+	#Should the mod change the color of tooltips of items from Vampirism (Garlic Bread, Human Heart, ect.)?
+	coloredTooltipsForVampirismItems = true
+	#Should the mod add tooltips that show which faction the item belongs to?
+	factionTooltips = true
+	#Should the mod add tooltips for items from Vampirism (Garlic Bread, Human Heart, ect.) that show which faction the item belongs to?
+	factionTooltipsForVampirismItems = true
+	#Should hunter food tooltips and tooltip's color be shown to all fractions? (Only shown to vampires by default)
+	hunterTooltipsForEveryone = false
+	#Should some items have debug tooltips displaying food values? Only for testing purposes.
+	debugFoodTooltips = false
+
+	[tooltips.tooltip_colors]
+		#What color (hex) should be used for vampire food tooltips as the start color? (The shade it starts with)
+		vampireFoodTooltipStartColor = "#7c287c"
+		#What color (hex) should be used for vampire food tooltips as the end color? (The shade it ends with)
+		vampireFoodTooltipEndColor = "#320046"
+		#What color (hex) should be used for hunter food tooltips as the start color? (The shade it starts with)
+		hunterFoodTooltipStartColor = "#4141dc"
+		#What color (hex) should be used for hunter food tooltips as the end color? (The shade it ends with)
+		hunterFoodTooltipEndColor = "#1e1e5a"
+		#What color (hex) should be used for werewolf food tooltips as the start color? (Werewolves mod only) (The shade it starts with)
+		werewolfFoodTooltipStartColor = "#fa8500"
+		#What color (hex) should be used for werewolf food tooltips as the end color? (Werewolves mod only) (The shade it ends with)
+		werewolfFoodTooltipEndColor = "#732c00"
+
+[appleskin]
+	#Should AppleSkin tooltips' food values be fixed depending on player's race? (In case the player is a vampire, it'll show blood values for vampire food)
+	correctAppleSkinTooltips = true
+	#Should AppleSkin tooltips be hidden for human food if the player is a vampire?
+	hideAppleSkinHumanFoodTooltipsForVampires = true
+	#Should AppleSkin tooltips be hidden if the player is a werewolf for food they can't eat?
+	hideAppleSkinHumanFoodTooltipsForWerewolves = true
