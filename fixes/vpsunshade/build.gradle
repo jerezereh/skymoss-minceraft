@@ -1,0 +1,123 @@
+plugins {
+    id 'net.neoforged.moddev' version '2.0.140'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenCentral()
+
+    // Vampirism's own maven — hosts both the addon-facing ":api" jar and the full mod jar.
+    // Confirmed from Vampirism's own gradle/forge.gradle.
+    maven {
+        name = "Maxanier"
+        url = "https://maven.maxanier.de/releases"
+        content { includeGroupAndSubgroups "de.teamlapen" }
+    }
+
+    // Sable's own maven — confirmed from Simulated-Project's root build.gradle (used by
+    // Simulated/Aeronautics/Offroad to depend on Sable) and Sable's own wiki.
+    maven {
+        name = "ryanhcode"
+        url = "https://maven.ryanhcode.dev/releases"
+        content { includeGroup "dev.ryanhcode.sable" }
+    }
+}
+
+neoForge {
+    version = neoforge_version
+
+    parchment {
+        minecraftVersion = parchment_minecraft_version
+        mappingsVersion = parchment_mappings_version
+    }
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    // --- Vampirism -----------------------------------------------------
+    // The dedicated addon API jar is the officially documented way for third-party
+    // mods to compile against Vampirism (see TeamLapen/Vampirism's README "Use Vampirism
+    // in your development environment"). We only ever touch classes from this api jar.
+    compileOnly "de.teamlapen.vampirism:Vampirism:${vampirism_minecraft_version}-${vampirism_version}:api"
+    // Full jar, dev-environment-only, so `runClient`/`runServer` actually have Vampirism loaded
+    // to test against. This is NOT bundled into the shipped jar (runtimeOnly on the *project*
+    // classpath just means "available when NeoForge launches locally", not "shaded in").
+    runtimeOnly "de.teamlapen.vampirism:Vampirism:${vampirism_minecraft_version}-${vampirism_version}"
+
+    // --- Sable -----------------------------------------------------------
+    // Artifact coordinate: confirmed against Sable's own GitHub wiki ("Getting Started &
+    // Depending on Sable"), which documents exactly this pattern —
+    //   dev.ryanhcode.sable:sable-<loader>-<mc_version>:<version>
+    // e.g. their own example: api("dev.ryanhcode.sable:sable-common-${minecraft_version}:${sable_version}")
+    // — so "sable-neoforge-1.21.1:2.0.3" below is the documented shape, not a guess.
+    //
+    // transitive = false is deliberate, not a shortcut: the only method we call,
+    // SubLevelsBlockSkyMixinHelper.checkSkyWithSublevels(Level, BlockPos): boolean, has a
+    // signature made entirely of vanilla Minecraft types. Compiling a call to it needs nothing
+    // from Sable's own internal dependency graph (Veil, sable-companion, and whatever *those*
+    // pull in turn) — chasing that whole tree's maven hosts one resolution error at a time is a
+    // losing game and was the wrong approach in the previous revision of this file. Without
+    // transitive=false, Gradle still resolves the *entire* graph regardless of what our code
+    // actually touches, which is what caused the last two build failures.
+    //
+    // Trade-off: this means `./gradlew runClient`/`runServer` (a full local dev-environment
+    // launch) likely won't have a fully-functional Sable, since its real runtime deps are skipped
+    // here too. That's fine for this mod's actual purpose — producing a jar to drop into an
+    // already-fully-modded instance, where the real Sable install already has its own real
+    // dependencies present as separate jars in `mods/`. If you specifically need `runClient`
+    // against a working Sable, drop `transitive = false` and instead add every repo Sable's own
+    // build.gradle declares (Veil/BlameJared, sable-companion, and whatever Veil itself needs).
+    //
+    // Remaining caveat — API stability, not coordinates: the one class we actually call,
+    // dev.ryanhcode.sable.mixinhelpers.entity.sublevels_block_sky.SubLevelsBlockSkyMixinHelper,
+    // is annotated @ApiStatus.Internal. It's the real method Sable's own mixin uses to patch
+    // this exact gap for vanilla mobs — not a placeholder — but it isn't a committed-stable
+    // public contract, so a future Sable release could rename or change it without notice.
+    compileOnly("dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}") {
+        transitive = false
+    }
+    runtimeOnly("dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}") {
+        transitive = false
+    }
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version, minecraft_version_range: minecraft_version_range,
+            neoforge_version       : neoforge_version, neoforge_version_range: neoforge_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors            : mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

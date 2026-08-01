@@ -18,6 +18,7 @@ surfaces.
 | `server/` | Dedicated-server config that is *not* part of the pack (`server.properties`, ops, JVM args) |
 | `bridge/` | The Discord ↔ GitHub relay service, plus server admin commands |
 | `infra/` | The Ubuntu host as code — Docker Compose, Caddy, monitoring, backup scripts |
+| `fixes/` | Source for the three custom mods written for this pack |
 | `tools/` | Maintenance scripts (manifest import, side classification) |
 | `docs/` | Longer-form documentation |
 

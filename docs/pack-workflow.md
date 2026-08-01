@@ -136,12 +136,13 @@ means **dedicated server only** — it excludes the client, and the client's int
 server needs these for singleplayer and LAN worlds. They're 17 KB combined and inert
 on a multiplayer client, so `both` costs nothing and avoids a mod-list mismatch.
 
-### Keep the source
+### Source
 
-Only compiled jars exist for two of them. If whoever wrote them still has the source,
-get it into a repo — a 6 KB jar with no source is one lost laptop away from being
-unmaintainable. `KPEnchantFix` is the exception: it's pure JSON, so the jar *is* the
-source.
+Lives in [`fixes/`](../fixes/README.md) — two NeoForge Gradle projects and one raw
+datapack, with build and republish instructions.
+
+For a while these existed only as compiled jars in a release, which made them
+unmaintainable the moment anything needed changing. That's resolved.
 
 ## Releasing
 

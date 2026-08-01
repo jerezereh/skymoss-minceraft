@@ -1,0 +1,62 @@
+modLoader="lowcodefml"
+loaderVersion="[1,)"
+license="CC0-1.0"
+showAsDataPack=true
+
+[[mods]]
+modId="kp_enchant_fix"
+version="2.0.0"
+displayName="Kitchen Projectiles Enchantment Fix"
+description='''
+Surgical version: overrides vanilla loyalty.json, multishot.json, and
+piercing.json so their supported_items also include everything in
+#farmersdelight:tools/knives, via two small custom tags. Unlike a
+tag-merge on #minecraft:enchantable/trident or /crossbow, this does not
+touch Riptide, Channeling, Impaling, or Quick Charge - only the three
+enchantments listed above become legal on a knife.
+
+No mixins, no Fabric API dependency, no code at all - pure data, read
+natively by every loader.
+
+Caveats:
+- Multishot and Piercing are still in vanilla's own
+  #minecraft:exclusive_set/crossbow, so a knife can carry one or the
+  other, never both at once - same as a real crossbow.
+- Piercing will attach and cost an anvil combine like normal, but
+  Kitchen Projectiles' thrown-knife code stops looking for a next hit
+  the instant it deals damage once (no pierce-count tracking at all),
+  so it currently has no gameplay effect. Included because it was
+  asked for; see README for the reasoning and what a real fix would need.
+- Because this replaces the three vanilla enchantment files outright
+  (tags merge, enchantment definitions do not), it is a frozen copy of
+  their 1.21.1 costs/weights/effects. If Mojang changes those upstream,
+  this needs to be re-synced by hand.
+'''
+
+[[dependencies.kp_enchant_fix]]
+    modId="neoforge"
+    type="required"
+    versionRange="[21,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.kp_enchant_fix]]
+    modId="minecraft"
+    type="required"
+    versionRange="[1.21,1.21.2)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.kp_enchant_fix]]
+    modId="farmersdelight"
+    type="optional"
+    reason="Only relevant if Farmer's Delight's knife tag exists to reference"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.kp_enchant_fix]]
+    modId="kitchenprojectiles"
+    type="optional"
+    reason="This fix only matters if knives are throwable in the first place"
+    ordering="AFTER"
+    side="BOTH"

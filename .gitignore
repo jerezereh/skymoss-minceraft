@@ -22,6 +22,16 @@ mods/
 mirror/
 /srv/
 
+# Exception: Gradle wrapper jars for the custom fix mods in fixes/. These are part
+# of the wrapper contract — without them ./gradlew cannot bootstrap, and the projects
+# are unbuildable from a fresh clone. ~60 KB each.
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# Build output for those projects.
+fixes/*/build/
+fixes/*/.gradle/
+fixes/*/run/
+
 # ---------------------------------------------------------------------------
 # Worlds — tracked in the separate skymoss-worlds repo, not here.
 # ---------------------------------------------------------------------------
