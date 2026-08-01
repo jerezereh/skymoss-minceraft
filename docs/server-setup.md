@@ -28,8 +28,7 @@ What it checks and why:
 |---|---|
 | **docker** + compose plugin | everything |
 | **git** | cloning this repo |
-| **zstd** | compressing world snapshots |
-| **git-lfs** | pushing snapshots to the worlds repo |
+| zstd | compressing ad-hoc archives (optional) |
 | node | *only* to edit the pack on this host — you can do that on your desktop instead |
 
 After installing Docker you must **log out and back in** before the `docker` command
@@ -88,9 +87,9 @@ Create that release once (17 KB total):
 
 ```bash
 cd /path/to/the/jars
-gh release create orphan-mods-v1 \
+gh release create custom-fixes-v1 \
   KPEnchantFix-neoforge-mod.jar kp_slot_fix-1.0.0.jar vpsunshade-1.0.0.jar \
-  --title "Orphan mods v1" \
+  --title "Custom fixes v1" \
   --notes "Bespoke jars with no upstream source. Referenced by pack/mods/*.pw.toml."
 ```
 
@@ -307,12 +306,12 @@ Until that exists, run `tools/sync-mirror.sh` by hand after pack changes.
 ## Backups
 
 Set up `restic` for frequent backups, and use the snapshot script for milestone
-history. See the [skymoss-worlds README](https://github.com/jerezereh/skymoss-worlds)
-for why both, and what each is for.
+Backups run hourly with restic to Cloudflare R2 — deduplicated, encrypted, offsite,
+and skipped when nobody is online. Setup and restore steps are in
+[monitoring.md](monitoring.md#backups--restic-to-cloudflare-r2).
 
 ```bash
-# Weekly milestone snapshot
-/srv/skymoss-minceraft/infra/backup/snapshot-world.sh weekly
+docker compose -f infra/docker-compose.yml logs mc-backup | tail -20
 ```
 
 ## Troubleshooting

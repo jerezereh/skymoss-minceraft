@@ -21,8 +21,9 @@ surfaces.
 | `tools/` | Maintenance scripts (manifest import, side classification) |
 | `docs/` | Longer-form documentation |
 
-World saves are **not** in this repo — they live in [`skymoss-worlds`](https://github.com/jerezereh/skymoss-worlds)
-as LFS-tracked snapshots, so cloning the pack stays fast.
+World saves are **not** in this repo. They are backed up hourly with restic to
+Cloudflare R2 — deduplicated, encrypted, and offsite. See
+[`docs/monitoring.md`](docs/monitoring.md#backups--restic-to-cloudflare-r2).
 
 ---
 

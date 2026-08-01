@@ -17,7 +17,7 @@ until the next restart silently reverts it. Neither panel would manage the
 compose-defined `mc` service either; both replace it with a container they control.
 
 Most of what a panel offers is already covered — file editing by git, backups by
-`snapshot-world.sh`, mod installs by the manifest, whitelist by the repo. What was
+restic, mod installs by the manifest, whitelist by the repo. What was
 genuinely missing was resource graphs, downtime alerting, and a quick console. That's
 what this covers.
 
@@ -112,38 +112,81 @@ path, so there's only one recovery behaviour to reason about.
 
 Three separate concerns, deliberately handled by three different mechanisms.
 
-### Frequent backups — `mc-backup` sidecar
+### Backups — restic to Cloudflare R2
 
-Runs with the stack. Hourly `tar` backups to `BACKUP_DIR` (default
-`/srv/skymoss-backups`), pruned after 7 days, skipped entirely when nobody is
-online. It coordinates `save-off` / `save-all` / `save-on` over RCON itself, so a
-backup can never catch a half-written region file.
+Hourly, deduplicated, encrypted, offsite. Runs with the stack, skipped entirely when
+nobody is online, and coordinates `save-off` / `save-all` / `save-on` over RCON so a
+backup can never catch a half-written region file. The world volume is mounted
+**read-only**.
 
-The world volume is mounted **read-only** — a backup tool has no business writing
-to the world.
+**Why not Git LFS.** The original plan stored snapshots in a `skymoss-worlds` repo.
+That was the wrong tool:
+
+| | Git LFS | restic |
+|---|---|---|
+| First backup | 158 MB | ~370 MB |
+| Each weekly after | **+158 MB** (full copy) | **+10–50 MB** (changed chunks) |
+| A year of weekly | ~8 GB, unprunable | ~2–3 GB, retention reclaims space |
+| Deleting old backups | Rewrite history and force-push | `forget --prune` |
+| Encryption | None | Client-side, always |
+
+Remote LFS objects cannot be pruned without rewriting history, so storage only ever
+grows — and a binary blob gets none of git's diffing or merging benefits in return.
+The worlds repo was deleted; restic replaces it entirely.
+
+**Setup** — see `infra/.env.example`. Create an R2 bucket and an API token, fill in
+`RESTIC_*` and `R2_*`, then initialise the repository once:
 
 ```bash
-ls -lht /srv/skymoss-backups | head
+cd /srv/skymoss-minceraft/infra
+set -a; . ./.env; set +a
+docker run --rm \
+  -e RESTIC_REPOSITORY -e RESTIC_PASSWORD \
+  -e AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+  -e AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+  restic/restic init
+```
+
+> **`RESTIC_PASSWORD` is not recoverable.** It encrypts the repository; lose it and
+> every backup is permanently unreadable. Store it somewhere other than this server —
+> a password manager, not `.env` alone.
+
+**Checking on it:**
+
+```bash
 docker compose -f infra/docker-compose.yml logs mc-backup | tail -20
+
+# list snapshots
+docker run --rm \
+  -e RESTIC_REPOSITORY -e RESTIC_PASSWORD \
+  -e AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+  -e AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+  restic/restic snapshots
 ```
 
-Restore: stop `mc`, extract the tar over the world volume, start it. Keep the old
-world directory until you've confirmed the restore is good.
-
-### Milestone snapshots — weekly, to `skymoss-worlds`
-
-`infra/backup/snapshot-world.sh` compresses the world and commits it to the worlds
-repo through Git LFS. This is the offsite, durable, shareable history — the local
-backups above don't survive the box dying.
+**Restoring:**
 
 ```bash
-sudo cp infra/systemd/skymoss-snapshot.* /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now skymoss-snapshot.timer
+docker compose -f infra/docker-compose.yml stop mc
+WORLD_VOL=$(docker volume inspect skymoss_mc-data --format '{{ .Mountpoint }}')
+sudo mv "$WORLD_VOL/FlyMoss" "$WORLD_VOL/FlyMoss.before-restore"
+
+docker run --rm \
+  -e RESTIC_REPOSITORY -e RESTIC_PASSWORD \
+  -e AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+  -e AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+  -v "$WORLD_VOL:/restore" restic/restic restore latest --target /restore
+
+docker compose -f infra/docker-compose.yml start mc
 ```
 
-Weekly rather than daily on purpose: a snapshot is ~220 MB, and GitHub LFS gives
-1 GB free before it starts costing money. Daily would be ~6.5 GB/month.
+Keep `FlyMoss.before-restore` until you've confirmed the restore is good.
+
+**What is excluded, and why it matters.** `DistantHorizons.sqlite` is a regenerable
+client-side LOD render cache. In the original FlyMoss world it was **1.5 GB against
+370 MB of actual terrain** — 80% of the save, for data the client rebuilds on its
+own. Compression does not rescue you: region files are already zlib-compressed
+internally, so a 1.8 GB world gzips to 1.7 GB.
 
 ### Nightly restart
 

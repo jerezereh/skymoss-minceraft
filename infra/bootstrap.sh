@@ -54,10 +54,10 @@ fi
 check git    "to clone this repo"
 
 echo
-echo "Required for world snapshots:"
-# snapshot-world.sh pipes tar through zstd; the worlds repo stores tarballs in LFS.
-check zstd    "compresses world snapshots" snapshot
-check git-lfs "stores snapshots in the worlds repo" snapshot
+echo "Optional:"
+# Backups run in the mc-backup container via restic, so nothing extra is needed on
+# the host. zstd is still handy for ad-hoc archives.
+check zstd "compressing ad-hoc archives" optional
 
 echo
 echo "Only needed to EDIT the pack on this host (you can do that on your desktop):"
@@ -96,7 +96,7 @@ if (( ! INSTALL )); then
     echo "  sudo usermod -aG docker \$USER    # then log out and back in"
     echo
   fi
-  echo "  sudo apt update && sudo apt install -y git zstd git-lfs"
+  echo "  sudo apt update && sudo apt install -y git zstd"
   echo
   echo "Re-run with --install to do this automatically."
   # Missing required tooling is a failure; missing snapshot/optional tooling is not.
@@ -125,9 +125,8 @@ if ! have docker || (( snap_docker )); then
 fi
 
 APT_PKGS=()
-have git     || APT_PKGS+=(git)
-have zstd    || APT_PKGS+=(zstd)
-have git-lfs || APT_PKGS+=(git-lfs)
+have git  || APT_PKGS+=(git)
+have zstd || APT_PKGS+=(zstd)
 
 if [[ ${#APT_PKGS[@]} -gt 0 ]]; then
   echo "==> apt: ${APT_PKGS[*]}"

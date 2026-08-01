@@ -135,9 +135,11 @@ services:
   # ---------------------------------------------------------------------------
   # Frequent local backups
   # ---------------------------------------------------------------------------
-  # Two different jobs, deliberately not merged:
-  #   this service        hourly, local, pruned — "a creeper ate the base an hour ago"
-  #   snapshot-world.sh   weekly, LFS, offsite  — durable history you can point at
+  # restic to Cloudflare R2. Git was the wrong tool for this: every LFS snapshot is
+  # a full 158 MB copy, remote LFS objects cannot be pruned without rewriting
+  # history, and a binary blob gets none of git's benefits. restic does
+  # content-defined chunking, so after the first ~370 MB upload a week of play adds
+  # roughly 10-50 MB, and `forget --prune` genuinely reclaims space.
   #
   # It coordinates save-off / save-all / save-on over RCON itself, so a backup can
   # never catch a half-written region file. PAUSE_IF_NO_PLAYERS stops it archiving
@@ -145,13 +147,28 @@ services:
   mc-backup:
     image: itzg/mc-backup:latest
     container_name: skymoss-backup
+    # Pinned deliberately: restic keys snapshots by hostname, and Docker generates a
+    # random one per container. Leaving it unset fragments the history into
+    # unrelated chains on every recreate, and retention then prunes the wrong things.
+    hostname: skymoss
     logging: *default-logging
     restart: unless-stopped
     environment:
       BACKUP_INTERVAL: "${BACKUP_INTERVAL:-1h}"
       INITIAL_DELAY: "5m"
-      PRUNE_BACKUPS_DAYS: "${BACKUP_PRUNE_DAYS:-7}"
       PAUSE_IF_NO_PLAYERS: "true"
+
+      BACKUP_METHOD: restic
+      # S3-compatible endpoint. R2 charges no egress, which matters precisely on the
+      # day you actually need a restore.
+      RESTIC_REPOSITORY: "${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY}"
+      RESTIC_PASSWORD: "${RESTIC_PASSWORD:?set RESTIC_PASSWORD}"
+      AWS_ACCESS_KEY_ID: "${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY}"
+
+      # Dense recent history, thinning with age. Unlike LFS, pruning here actually
+      # frees storage.
+      PRUNE_RESTIC_RETENTION: "${RESTIC_RETENTION:---keep-hourly 24 --keep-daily 14 --keep-weekly 8 --keep-monthly 12}"
 
       RCON_HOST: mc
       RCON_PORT: "25575"
@@ -164,12 +181,13 @@ services:
       # four times the size of the actual terrain. Backing it up would turn a
       # ~370 MB snapshot into a ~1.8 GB one for data the client rebuilds anyway.
       EXCLUDES: "*.jar,cache,logs,crash-reports,session.lock,DistantHorizons.sqlite*"
-      BACKUP_METHOD: tar
       TZ: "${TZ:-America/Los_Angeles}"
     volumes:
       # Read-only: a backup tool has no business writing to the world.
       - mc-data:/data:ro
-      - ${BACKUP_DIR:-/srv/skymoss-backups}:/backups
+      # restic's local cache. Persisted so it isn't rebuilt from the remote on every
+      # container recreate, which would mean re-downloading metadata each time.
+      - restic-cache:/var/cache/restic
     security_opt:
       - no-new-privileges:true
     networks:
@@ -424,3 +442,4 @@ volumes:
   caddy-data:
   caddy-config:
   uptime-kuma-data:
+  restic-cache:
