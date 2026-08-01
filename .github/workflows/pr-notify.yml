@@ -1,0 +1,51 @@
+name: Notify pull requests
+
+# Posts opened pull requests into Discord, so people who never open GitHub can see
+# what is being proposed. Development activity, not an incident — the bridge routes
+# it to the CI channel rather than the alert channel.
+#
+# `pull_request` rather than `pull_request_target`: secrets are not exposed to
+# workflows triggered by forked pull requests, so a fork PR simply does not notify.
+# That is the right trade. Notifications are a nicety, and pull_request_target runs
+# with repository secrets against a merge ref, which is not worth the risk for one
+# Discord message. Branches pushed to this repo — the whole point of the branch
+# protection rules — carry secrets normally and notify as expected.
+#
+# notify-bridge.sh exits 0 when BRIDGE_URL or CI_EVENT_SECRET is unset, so the fork
+# case is a clean skip rather than a red X on someone's contribution.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # A draft opened as a draft is not ready to look at. Reopened and
+    # ready_for_review still fire, so it lands in Discord when it becomes real.
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Post to bridge
+        env:
+          BRIDGE_URL: ${{ secrets.BRIDGE_URL }}
+          CI_EVENT_SECRET: ${{ secrets.CI_EVENT_SECRET }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        # Title and author go through the environment, not ${{ }} interpolation in the
+        # run block: a PR title is attacker-controlled text, and interpolating it
+        # directly into a shell command is a script injection.
+        run: |
+          ./.github/scripts/notify-bridge.sh \
+            --kind pr \
+            --name "PR #${PR_NUMBER}: ${PR_TITLE}" \
+            --detail "\`${PR_BRANCH}\` → \`${PR_BASE}\` by ${PR_AUTHOR}" \
+            --url "${PR_URL}"

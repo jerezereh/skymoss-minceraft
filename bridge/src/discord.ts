@@ -153,7 +153,16 @@ export class DiscordSide {
   }
 
   async postToCiChannel(content: string): Promise<void> {
-    const channel = (await this.client.channels.fetch(config.discord.ciChannelId)) as TextChannel | null;
+    await this.postToChannel(config.discord.ciChannelId, content);
+  }
+
+  /** Things that are broken right now. See config.discord.alertChannelId. */
+  async postToAlertChannel(content: string): Promise<void> {
+    await this.postToChannel(config.discord.alertChannelId, content);
+  }
+
+  private async postToChannel(channelId: string, content: string): Promise<void> {
+    const channel = (await this.client.channels.fetch(channelId)) as TextChannel | null;
     if (!channel) return;
     await channel.send({ content: truncateForDiscord(content), allowedMentions: { parse: [] } });
   }

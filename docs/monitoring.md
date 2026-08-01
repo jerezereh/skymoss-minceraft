@@ -63,7 +63,19 @@ Set up one notification and attach it to every monitor.
 `YOUR_ALERT_TOKEN` is `ALERT_TOKEN` from `infra/.env`. Generate one with
 `openssl rand -hex 32`.
 
-Alerts land in the same `#ci` channel as build and release notifications.
+Alerts land in `#alerts` (`DISCORD_ALERT_CHANNEL_ID`), not `#ci`. Failed builds on
+`main` go there too — the mirror publishes from `main`, so a broken manifest there
+breaks every install, which is the same urgency class as the server being down.
+
+Everything else — pull requests, passing builds, releases — stays in `#ci`.
+
+The split is about Discord's notification settings being per-channel. One channel
+means choosing between muting a 3am outage and being pinged for every pull request,
+and the routine traffic is what trains you to ignore the alert. Turn notifications
+on for `#alerts` and mute `#ci`.
+
+If `DISCORD_ALERT_CHANNEL_ID` is unset, alerts fall back to `#ci` and behave as they
+did before.
 
 > `/alerts` uses a **bearer token**, not the HMAC signature that `/events` uses.
 > That's not an oversight — Uptime Kuma can't compute a signature over its own body,

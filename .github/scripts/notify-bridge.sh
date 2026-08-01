@@ -18,6 +18,7 @@ NAME=""
 VERSION=""
 URL=""
 DETAIL=""
+BRANCH=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -27,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --version) VERSION="$2"; shift 2 ;;
     --url)     URL="$2";     shift 2 ;;
     --detail)  DETAIL="$2";  shift 2 ;;
+    --branch)  BRANCH="$2";  shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 0 ;;
   esac
 done
@@ -43,7 +45,8 @@ PAYLOAD=$(jq -nc \
   --arg version "$VERSION" \
   --arg url     "$URL" \
   --arg detail  "$DETAIL" \
-  '{kind:$kind, status:$status, name:$name, version:$version, url:$url, detail:$detail}
+  --arg branch  "$BRANCH" \
+  '{kind:$kind, status:$status, name:$name, version:$version, url:$url, detail:$detail, branch:$branch}
    | with_entries(select(.value != ""))')
 
 # The signature covers the exact bytes sent; the bridge recomputes it over the raw
