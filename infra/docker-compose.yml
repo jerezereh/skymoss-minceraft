@@ -199,7 +199,20 @@ services:
           fi
           curl -fsS -m 10 -o /dev/null "$$url" 2>/dev/null \
             || wget -q -T 10 -O /dev/null "$$url" 2>/dev/null \
-            || echo "[post-backup] could not reach Uptime Kuma at $$KUMA_PUSH_URL"
+            || {
+                 echo "[post-backup] could not reach Uptime Kuma at $$KUMA_PUSH_URL"
+                 # Kuma's UI shows a Push URL written for the browser, which reaches it
+                 # through an SSH tunnel on localhost:3001. Pasted here verbatim, that
+                 # resolves to this container. Both .env.example and monitoring.md say
+                 # to swap the host — and it still got missed, so say it at the point
+                 # of failure rather than only in a doc nobody is reading at 3am.
+                 case "$$KUMA_PUSH_URL" in
+                   *localhost*|*127.0.0.1*)
+                     echo "[post-backup] localhost here is this container, not the host."
+                     echo "[post-backup] set KUMA_BACKUP_PUSH_URL=http://uptime-kuma:3001/api/push/<token>"
+                     ;;
+                 esac
+               }
         fi
 
       BACKUP_METHOD: restic
