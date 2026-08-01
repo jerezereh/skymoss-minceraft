@@ -12,5 +12,5 @@ side = "both"
 
 [download]
 url = "https://github.com/jerezereh/skymoss-minceraft/releases/download/custom-fixes-v1/kp_slot_fix-1.0.0.jar"
-hash-format = "sha512"
-hash = "2abdeb85ee1e1f7aa43d2e779ba27b9edf95f95ef0fccb44df120f807d0b513e6f9b8e06ba1f98905af12ff67d0b12f9ca975d0b3cbb479fef0800c83e5274d6"
+hash-format = "sha256"
+hash = "1f611257d7ca433be96a846f508797451f65260bc4affea6c7675b71cb2b6ae8"

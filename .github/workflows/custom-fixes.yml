@@ -102,73 +102,18 @@ jobs:
           echo "built $built fix(es)"
           ls -la dist/
 
-      # Both build paths are reproducible, so a jar built from a given source tree is
-      # byte-identical every time. That lets the hash be an INPUT that is committed
-      # alongside the source change and verified here, rather than an output someone
-      # copies out of a build log into a file afterwards.
-      #
-      # On a PR the metafile legitimately may not be updated yet, so a mismatch is a
-      # notice telling you what to commit. On a tag it is fatal: publishing artifacts
-      # the manifest cannot verify would break every install with "Hash invalid!".
-      - name: Verify jars match the manifest
-        run: |
-          set -uo pipefail
-          is_tag=false
-          [[ "${GITHUB_REF}" == refs/tags/custom-fixes-* ]] && is_tag=true
-          mismatch=0
-
-          {
-            echo "### Built jars"
-            echo ""
-            echo "| jar | manifest | sha512 |"
-            echo "|---|---|---|"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          for f in dist/*.jar; do
-            jar="$(basename "$f")"
-            got="$(sha512sum "$f" | cut -d' ' -f1)"
-            meta="$(grep -rl "^filename = \"${jar}\"\$" pack/mods/ 2>/dev/null | head -1)"
-
-            if [ -z "$meta" ]; then
-              # A new fix before its metafile exists, or a renamed jar.
-              echo "| \`$jar\` | not referenced | \`$got\` |" >> "$GITHUB_STEP_SUMMARY"
-              echo "::notice::$jar is not referenced by any pack/mods/*.pw.toml yet"
-              mismatch=1
-              continue
-            fi
-
-            want="$(sed -n 's/^hash = "\(.*\)"$/\1/p' "$meta")"
-            if [ "$want" = "$got" ]; then
-              echo "| \`$jar\` | matches | \`$got\` |" >> "$GITHUB_STEP_SUMMARY"
-              echo "  OK        $jar"
-            else
-              echo "| \`$jar\` | **MISMATCH** | \`$got\` |" >> "$GITHUB_STEP_SUMMARY"
-              echo "  MISMATCH  $jar"
-              echo "     pinned in $meta: $want"
-              echo "     built:                $got"
-              mismatch=1
-            fi
-          done
-
-          if [ "$mismatch" = "1" ]; then
-            {
-              echo ""
-              echo "Set \`hash\` (and \`url\`/\`filename\` if they changed) in the matching"
-              echo "\`pack/mods/*.pw.toml\`, run \`node tools/build-index.ts\`, and commit that"
-              echo "**in this PR** — then the tag build verifies rather than discovers it."
-            } >> "$GITHUB_STEP_SUMMARY"
-
-            if [ "$is_tag" = "true" ]; then
-              echo "::error::built jars do not match the hashes pinned in pack/mods/. Update the metafiles, then re-tag."
-              exit 1
-            fi
-            echo "::warning::hashes differ from the manifest — commit the updates before tagging"
-          fi
+      # No hash verification here. GitHub publishes a sha256 digest for every
+      # release asset, so `node tools/sync-fix-hashes.ts --tag <tag>` writes the
+      # correct value into pack/mods/*.pw.toml straight from the published artifact.
+      # That is correct by construction — the digest describes the exact bytes being
+      # served — so a CI gate comparing build output against the manifest would only
+      # be re-deriving something the API already answers.
 
       # A record of what was published, so the release is self-describing without
-      # digging through workflow logs.
+      # digging through workflow logs. sha256 to match the digest GitHub reports and
+      # the hash-format the metafiles now use.
       - name: Write checksum manifest
-        run: (cd dist && sha512sum *.jar > SHA512SUMS.txt && cat SHA512SUMS.txt)
+        run: (cd dist && sha256sum *.jar > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@v4
         with:
@@ -181,16 +126,23 @@ jobs:
         with:
           files: |
             dist/*.jar
-            dist/SHA512SUMS.txt
+            dist/SHA256SUMS.txt
           body: |
             Bespoke fixes for bugs in mods this pack depends on. These exist nowhere
             upstream — `fixes/` in this repo is their canonical source.
 
             Built by CI from the tagged commit.
 
-            Every jar here was verified against the sha512 already pinned in
-            `pack/mods/*.pw.toml` before publishing — the release cannot contain an
-            artifact the pack manifest disagrees with. `SHA512SUMS.txt` records them.
+            **After this release publishes**, point the pack at it:
+
+            ```bash
+            node tools/sync-fix-hashes.ts --tag <this tag>
+            node tools/build-index.ts && node tools/validate-pack.ts
+            ```
+
+            That reads each asset's sha256 digest from the GitHub API and writes it
+            into `pack/mods/*.pw.toml`, so the manifest describes the exact bytes
+            being served. `SHA256SUMS.txt` records the same values.
 
             > **Do not replace these assets in place.** Overwriting one breaks every
             > install with a hash mismatch. Publish rebuilds under a new

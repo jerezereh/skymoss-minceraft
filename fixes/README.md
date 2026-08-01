@@ -101,44 +101,39 @@ metafile — no need to compute it by hand.
 
 ## Publishing a change
 
-The manifest pins each jar by sha512. Both build paths are **reproducible** — a given
-source tree always produces a byte-identical jar — so the hash is committed alongside
-the source change and CI verifies it, rather than being copied out of a build log
-afterwards.
+packwiz pins a hash per mod — that's its integrity model, and it's why a corrupted or
+substituted jar fails cleanly instead of producing a subtly broken world. For the
+other 241 mods this is invisible: `packwiz modrinth install` fills it in from the API.
+The only reason it needs handling here is that we host these three ourselves.
 
-1. **Branch and change the source.**
+GitHub publishes a **sha256 digest for every release asset**, so the value already
+exists the moment a release is created. `sync-fix-hashes` reads it straight from the
+API:
 
-2. **Open a PR.** CI builds every fix and compares each jar against the hash pinned in
-   `pack/mods/`. Anything that differs is reported with the value to use — a warning,
-   not a failure, because the metafile legitimately hasn't been updated yet.
+1. **Branch, change the source, open a PR.** CI builds every fix, so breakage is
+   caught before merge.
 
-3. **Commit the metafile update in the same PR:**
-   ```toml
-   filename = "kp-enchant-fix.jar"                     # if it changed
-   [download]
-   url  = ".../releases/download/custom-fixes-v2/kp-enchant-fix.jar"
-   hash = "<sha512 from the PR run summary>"
-   ```
-   ```bash
-   node tools/build-index.ts && node tools/validate-pack.ts
-   ```
-   Push again; the PR should now report every jar as matching.
-
-4. **Merge, then tag:**
+2. **Merge and tag** — CI builds and publishes the jars:
    ```bash
    git tag custom-fixes-v2 && git push origin custom-fixes-v2
    ```
 
-CI rebuilds, **re-verifies against the committed hashes, and refuses to publish on a
-mismatch.** A release therefore cannot contain an artifact the pack manifest
-disagrees with — the failure mode that otherwise surfaces as `Hash invalid!` on every
-client, long after the release looked successful.
+3. **Point the pack at the new release:**
+   ```bash
+   node tools/sync-fix-hashes.ts --tag custom-fixes-v2
+   node tools/build-index.ts && node tools/validate-pack.ts
+   ```
+   That rewrites `filename`, `url`, and `hash` in each matching metafile from the
+   published artifact, and leaves anything already correct alone. Commit the result.
 
-`SHA512SUMS.txt` is attached to each release as a record.
+No copying hashes out of build logs, and nothing to keep in step by hand: the digest
+describes the exact bytes GitHub is serving, so the manifest is correct by
+construction rather than by discipline.
 
-> Only mods whose jar actually changed need a metafile update. Because Gradle builds
-> reproducibly, an untouched mod rebuilds to its existing hash and can keep pointing
-> at an older release tag indefinitely.
+`--check` reports drift without writing, if you want it as a CI or pre-commit guard.
+
+> Only mods whose jar actually changed get rewritten. An untouched fix keeps pointing
+> at whichever release it came from, so there's no churn from unrelated rebuilds.
 
 **The tag must not start with `v`** — `release.yml` triggers on `v*` and would build a
 pack release into the same tag. See `docs/pack-workflow.md`.

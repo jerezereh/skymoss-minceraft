@@ -2445,12 +2445,12 @@ metafile = true
 
 [[files]]
 file = "mods/kp-enchant-fix.pw.toml"
-hash = "c97ef26fb6352e4cc70f7de2cb000b22f86f717fe1de6cd2634daf5f39ffa8f1"
+hash = "e8bfb03ea9094f7332fd389933f07748c79515ce8586b6656542bce22d664991"
 metafile = true
 
 [[files]]
 file = "mods/kp-slot-fix.pw.toml"
-hash = "7468bf07b7d7d5e150a42b8b657be5690a0084826cc89f804af02993339bbd78"
+hash = "76fa18232294de3af1946ddb1ae0c8c5daac5a3784cc7f357673be30f3b9fe2c"
 metafile = true
 
 [[files]]
@@ -2890,7 +2890,7 @@ metafile = true
 
 [[files]]
 file = "mods/vpsunshade.pw.toml"
-hash = "4c077cb8ca8ade16cd790e403a964bc09c58027b9d7d112255f6e9f1dc65abf2"
+hash = "5fab078383f82c20d8f7ad1527876fc4d5f357906c8b4aaf59b28f6f4d07b33e"
 metafile = true
 
 [[files]]
