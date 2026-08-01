@@ -67,8 +67,21 @@ services:
       PACKWIZ_URL: "${PACKWIZ_URL:-http://mirror/pack/pack.toml}"
 
       MEMORY: "${MC_MEMORY:-8G}"
-      USE_AIKAR_FLAGS: "false"   # we supply our own in server/jvm.args
-      JVM_OPTS: "${MC_JVM_OPTS:-}"
+
+      # This previously read USE_AIKAR_FLAGS=false with an empty JVM_OPTS, on the
+      # assumption that server/jvm.args was being loaded. Nothing reads that file, so
+      # the server ran with stock JVM settings and no GC tuning at all — the same
+      # failure mode as the ignored /config/server.properties mount.
+      #
+      # Aikar's flags are the standard G1 baseline for modded servers: they trade a
+      # little throughput for much shorter GC pauses, which is what players actually
+      # experience as lag spikes. itzg sizes them from MEMORY automatically.
+      USE_AIKAR_FLAGS: "true"
+
+      # Extras Aikar's set does not cover. A mixin-heavy pack drives repeated
+      # metaspace GCs during mod load at the default size, and failing fast on OOM
+      # beats limping along in a death spiral.
+      JVM_OPTS: "-XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:+ExitOnOutOfMemoryError -Dfml.readTimeout=180 ${MC_JVM_OPTS:-}"
 
       # --- server.properties -------------------------------------------------
       # itzg builds /data/server.properties from these env vars on every boot, which
@@ -112,7 +125,7 @@ services:
     volumes:
       # No config bind-mounts: itzg reads /data/server.properties, and /config is not
       # consulted at all. server.properties comes from the env vars above; JVM flags
-      # come from JVM_OPTS. server/*.args and server/server.properties remain in the
+      # come from USE_AIKAR_FLAGS + JVM_OPTS. server/jvm.args and server.properties remain
       # repo as the documented reference for those values.
       - mc-data:/data
     # The pack is fetched from `mirror` during startup, so the mirror must not only

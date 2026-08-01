@@ -1,11 +1,17 @@
-# JVM flags for the Skymoss server (Java 21).
+# JVM flags for the Skymoss server (Java 21) — REFERENCE ONLY.
 #
-# Consumed via JVM_OPTS in infra/docker-compose.yml. Heap size is set separately
-# through the MEMORY env var so it can be tuned per host without editing this file.
+# This file is NOT read by anything. It was written on the assumption that
+# docker-compose loaded it, which it never did — the server ran with stock JVM
+# settings and no GC tuning until that was noticed.
 #
-# These are the Aikar-derived G1 flags, which remain the standard baseline for
-# modded servers: they trade a little throughput for much shorter GC pauses, which
-# is what actually matters when a pause shows up to players as a lag spike.
+# The live configuration is USE_AIKAR_FLAGS=true in infra/docker-compose.yml, which
+# generates essentially this same set and sizes it from MEMORY automatically. The
+# few extras Aikar's set omits (metaspace sizing, ExitOnOutOfMemoryError) are passed
+# through JVM_OPTS there.
+#
+# Kept because it documents why these flags are the right baseline: Aikar-derived G1
+# tuning trades a little throughput for much shorter GC pauses, which is what
+# actually matters when a pause shows up to players as a lag spike.
 
 -XX:+UseG1GC
 -XX:+ParallelRefProcEnabled
