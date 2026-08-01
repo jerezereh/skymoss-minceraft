@@ -169,7 +169,38 @@ services:
     environment:
       BACKUP_INTERVAL: "${BACKUP_INTERVAL:-1h}"
       INITIAL_DELAY: "5m"
-      PAUSE_IF_NO_PLAYERS: "true"
+
+      # Deliberately false, which is the opposite of the obvious choice.
+      #
+      # Pausing while the server is empty made sense for tar backups, where each run
+      # was a full copy. With restic it saves almost nothing: an unchanged world
+      # produces no new chunks, just a small snapshot record. What it costs is the
+      # ability to monitor backup cadence — a paused backup and a broken backup are
+      # indistinguishable from the outside, and after a quiet weekend a dead man's
+      # switch would fire with nothing actually wrong.
+      #
+      # Running unconditionally means "no successful backup in the last N hours" is
+      # unambiguously a fault.
+      PAUSE_IF_NO_PLAYERS: "false"
+
+      # Dead man's switch. A poll cannot detect a backup that never ran — silence
+      # looks exactly like success — so the backup reports in after each attempt and
+      # Uptime Kuma alerts when the report stops arriving.
+      #
+      # `$$` escapes compose interpolation so the shell sees $1 (the exit code passed
+      # to POST_BACKUP_SCRIPT) rather than compose trying to expand it.
+      KUMA_PUSH_URL: "${KUMA_BACKUP_PUSH_URL:-}"
+      POST_BACKUP_SCRIPT: |
+        if [ -n "$$KUMA_PUSH_URL" ]; then
+          if [ "$$1" = "0" ]; then
+            url="$$KUMA_PUSH_URL?status=up&msg=OK"
+          else
+            url="$$KUMA_PUSH_URL?status=down&msg=backup%20exit%20$$1"
+          fi
+          curl -fsS -m 10 -o /dev/null "$$url" 2>/dev/null \
+            || wget -q -T 10 -O /dev/null "$$url" 2>/dev/null \
+            || echo "[post-backup] could not reach Uptime Kuma at $$KUMA_PUSH_URL"
+        fi
 
       BACKUP_METHOD: restic
       # S3-compatible endpoint. R2 charges no egress, which matters precisely on the

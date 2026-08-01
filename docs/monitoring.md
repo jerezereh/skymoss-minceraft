@@ -188,6 +188,63 @@ client-side LOD render cache. In the original FlyMoss world it was **1.5 GB agai
 own. Compression does not rescue you: region files are already zlib-compressed
 internally, so a 1.8 GB world gzips to 1.7 GB.
 
+### Monitoring that a backup actually happened
+
+Kuma's other checks are polls — they ask "is this up?". A backup that never runs is
+the opposite problem: **nothing happens, and silence is indistinguishable from
+success.** No amount of polling detects it.
+
+The tool for that is a **Push** monitor, a dead man's switch. Kuma issues a URL, the
+backup pings it after each run, and Kuma alerts when the pings stop.
+
+**1. Create the monitor** in Uptime Kuma:
+
+| Field | Value |
+|---|---|
+| Monitor Type | **Push** |
+| Friendly Name | `Backups` |
+| Heartbeat Interval | `5400` (90 min — one hourly cycle plus slack) |
+| Retries | `1` |
+
+Copy the **Push URL** it shows. Replace its host with the container name so it
+resolves on the compose network:
+
+```
+http://uptime-kuma:3001/api/push/<token>
+```
+
+**2. Point the backup at it** in `infra/.env`:
+
+```
+KUMA_BACKUP_PUSH_URL=http://uptime-kuma:3001/api/push/<token>
+```
+
+```bash
+docker compose -f infra/docker-compose.yml up -d mc-backup
+```
+
+The hook runs after every attempt and reports `status=up` on exit code 0,
+`status=down` otherwise — so you learn about a *failing* backup immediately, and a
+*silent* one within 90 minutes.
+
+**Why `PAUSE_IF_NO_PLAYERS` is now false.** Pausing while the server is empty was
+right for tar backups, where every run was a full copy. With restic it saves close to
+nothing — an unchanged world produces no new chunks, only a small snapshot record.
+What it costs is this monitor: a paused backup and a broken backup look identical
+from outside, so after a quiet weekend the switch would fire with nothing wrong.
+Running unconditionally makes "no backup in 90 minutes" unambiguously a fault.
+
+**Verify** rather than assume the ping works — a monitor that never fires is worse
+than none, because it reads as healthy:
+
+```bash
+docker compose -f infra/docker-compose.yml logs mc-backup | tail -20
+```
+
+Within an hour the Push monitor should go green. If the log shows
+`could not reach Uptime Kuma`, the container has neither `curl` nor `wget`, or the
+URL is using `localhost` instead of the container name.
+
 ### Nightly restart
 
 Modded servers leak memory and accumulate entity and chunk cruft. `restart-server.sh`
