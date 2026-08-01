@@ -61,15 +61,31 @@ Requires JDK 21. First build downloads the NeoForge toolchain and takes a while.
 | `kp-slot-fix` | 1.21.1 | 21.1.172 |
 | `vpsunshade` | 1.21.1 | 21.1.241 |
 
+## CI
+
+`.github/workflows/custom-fixes.yml` builds all three:
+
+- **on a PR touching `fixes/`** — builds to catch breakage before merge
+- **on a `custom-fixes-*` tag** — builds and attaches the jars to that release, so
+  published artifacts come from a reproducible build rather than someone's laptop
+- **manually** via workflow_dispatch, which uploads them as run artifacts
+
+The run summary prints each jar's **sha512**, which is what you paste into the
+metafile — no need to compute it by hand.
+
 ## Publishing a rebuild
 
 The manifest pins each jar by sha512, so **a rebuilt jar is a different file even if
 the code is identical** — timestamps alone change the hash. Never replace an asset in
 an existing release: every install would fail verification.
 
-1. Build the new jar
-2. Publish under a **new tag**: `gh release create custom-fixes-v2 ... --title "Custom fixes v2"`
-3. Update that mod's `pack/mods/*.pw.toml` — both `url` and `hash`
+1. Commit the source change
+2. Tag a **new** release — CI builds the jars and attaches them:
+   ```bash
+   git tag custom-fixes-v2 && git push origin custom-fixes-v2
+   ```
+3. Take the sha512 from the workflow run summary and update that mod's
+   `pack/mods/*.pw.toml` — both `url` and `hash`
 4. `node tools/build-index.ts && node tools/validate-pack.ts`
 5. `node tools/check-urls.ts` to confirm the new URL resolves
 

@@ -1,0 +1,106 @@
+name: Custom fixes
+
+# Builds the three bespoke mods in fixes/.
+#
+# Two jobs with different purposes:
+#   - on a PR touching fixes/, build to catch breakage before merge
+#   - on a `custom-fixes-*` tag, build and attach the jars to that release, so the
+#     published artifacts come from a reproducible build rather than someone's laptop
+#
+# The tag pattern deliberately avoids `v*`, which release.yml claims for pack
+# releases. Tagging these `v1.0.0` once produced a release containing both the fix
+# jars and an auto-built .mrpack.
+
+on:
+  push:
+    tags: ['custom-fixes-*']
+  pull_request:
+    paths: ['fixes/**', '.github/workflows/custom-fixes.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'          # NeoForge 1.21.1 requires JDK 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build kp-slot-fix
+        working-directory: fixes/kp-slot-fix
+        run: ./gradlew build --no-daemon
+
+      - name: Build vpsunshade
+        working-directory: fixes/vpsunshade
+        run: ./gradlew build --no-daemon
+
+      # kp-enchant-fix has no code at all — lowcodefml + showAsDataPack — so its jar
+      # is just a zip of the directory. Building it the same way as the others would
+      # mean inventing a Gradle project for something that needs none.
+      - name: Package kp-enchant-fix
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          (cd fixes/kp-enchant-fix && zip -qr "$GITHUB_WORKSPACE/dist/KPEnchantFix-neoforge-mod.jar" . -x '.*')
+
+      - name: Collect jars
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          # Exclude -sources/-javadoc: a stray sources jar has ended up in this pack
+          # before, and shipping one as if it were the mod would be a confusing failure.
+          find fixes/*/build/libs -name '*.jar' \
+            ! -name '*-sources.jar' ! -name '*-javadoc.jar' \
+            -exec cp {} dist/ \;
+          ls -la dist/
+
+      # The manifest pins each jar by sha512, so a rebuild is a different file even
+      # when the source is identical — zip timestamps alone change it. Printing the
+      # hashes here removes the manual step of computing them before updating
+      # pack/mods/*.pw.toml.
+      - name: Report hashes for the manifest
+        run: |
+          {
+            echo "### Built jars"
+            echo ""
+            echo "Update \`url\` **and** \`hash\` in the matching \`pack/mods/*.pw.toml\`:"
+            echo ""
+            echo '```'
+            for f in dist/*.jar; do
+              echo "$(basename "$f")"
+              echo "  sha512 = $(sha512sum "$f" | cut -d' ' -f1)"
+              echo ""
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: custom-fixes
+          path: dist/*.jar
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/custom-fixes-')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.jar
+          body: |
+            Bespoke fixes for bugs in mods this pack depends on. These exist nowhere
+            upstream — `fixes/` in this repo is their canonical source.
+
+            Built by CI from the tagged commit.
+
+            > **Do not replace these assets in place.** `pack/mods/*.pw.toml` pins each
+            > jar by sha512, so overwriting one breaks every install with a hash
+            > mismatch. Publish rebuilds under a new `custom-fixes-*` tag and update
+            > both `url` and `hash` in the metafile.
+
+            Per-file hashes are in the workflow run summary.
