@@ -63,17 +63,39 @@ manifest locally. That's ~2 MB of TOML instead of a 400 MB transfer.
 `PACKWIZ_URL` defaults to `http://mirror/pack/pack.toml` over the internal compose
 network — no domain, no public hostname.
 
-### Later: mirror the jars too (optional)
+### Later: archive the jars too (recommended)
 
-The mirror's real purpose is surviving a mod being deleted upstream. Once things are
-running, copy the jars over and re-run without the flag:
+The mirror is an **archive**, not a distribution path. Metafiles keep pointing at
+Modrinth — this is what you repoint them *to* when a mod is deleted or delisted
+upstream. Mods do vanish: authors remove old versions, projects go private, and a
+pack that resolves entirely from other people's CDNs is one takedown away from being
+uninstallable. Three of these mods already exist nowhere but our own release.
+
+Fetch them on the server, so nothing has to be shipped from a workstation:
 
 ```bash
+sudo mkdir -p /srv/skymoss-jars && sudo chown "$USER" /srv/skymoss-jars
+node tools/fetch-jars.ts --out /srv/skymoss-jars
 bash tools/sync-mirror.sh /srv/skymoss-jars /srv/mirror
 ```
 
-That verifies every jar against its manifest hash and refuses to publish a mismatch.
-Then repoint the affected metafiles at the mirror if upstream ever disappears.
+`fetch-jars` verifies every download against the manifest hash and refuses to write a
+file that fails — an archive you cannot trust is worse than none, because you only
+find out when upstream is already gone. It is re-runnable: verified files are skipped,
+so an interrupted run resumes. `sync-mirror` then re-verifies before publishing.
+
+Roughly 400 MB and a few minutes. Nothing else changes: the pack still installs from
+upstream, and this only matters on the day something disappears.
+
+**When a mod does vanish**, repoint just that metafile:
+
+```toml
+[download]
+url = "http://mirror/mods/the-mod-1.2.3.jar"
+```
+
+The hash already in the file is what proves the mirrored copy is the same bytes the
+pack was built and tested against.
 
 ### The three orphan jars
 
