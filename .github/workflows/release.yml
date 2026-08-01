@@ -99,10 +99,22 @@ jobs:
 
           cp -a server "$OUT/server"
           mkdir -p "$OUT/infra"
-          cp infra/docker-compose.yml infra/.env.example "$OUT/infra/"
+
+          # Everything docs/server-setup.md and docs/monitoring.md tell an operator to
+          # run has to be in here, or the bundle documents commands it does not ship.
+          # This list is enumerated rather than globbed so that a file disappearing
+          # from infra/ breaks the release instead of quietly shrinking the artifact —
+          # which is how infra/backup/snapshot-world.sh, deleted when restic replaced
+          # Git LFS, went unnoticed until the first release after its removal.
+          cp infra/docker-compose.yml infra/.env.example infra/bootstrap.sh \
+             infra/restart-server.sh "$OUT/infra/"
           cp -a infra/caddy "$OUT/infra/caddy"
-          cp -a infra/backup "$OUT/infra/backup"
+          cp -a infra/systemd "$OUT/infra/systemd"
+          chmod +x "$OUT/infra/bootstrap.sh" "$OUT/infra/restart-server.sh"
+
           cp docs/server-setup.md "$OUT/README.md" 2>/dev/null || echo "See docs/server-setup.md" > "$OUT/README.md"
+          mkdir -p "$OUT/docs"
+          cp docs/monitoring.md "$OUT/docs/monitoring.md"
 
           sed -i "s/^version = .*/version = \"$V\"/" "$OUT/pack/pack.toml"
 
