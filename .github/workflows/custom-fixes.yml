@@ -74,7 +74,16 @@ jobs:
 
             elif [ -f "$dir/pack.mcmeta" ]; then
               echo "::group::package (data-only) — $name -> $name.jar"
-              (cd "$dir" && zip -qr "$GITHUB_WORKSPACE/dist/$name.jar" . -x '.*')
+              # Deterministic zip. zip embeds file mtimes, and a fresh checkout stamps
+              # them with the clone time, so an unchanged source tree would otherwise
+              # produce a different jar — and therefore a different sha512 — on every
+              # run. Normalising to the DOS epoch (which is what the original jar
+              # used) makes a rebuild verifiable against what was published.
+              #
+              # The Gradle projects already build reproducibly; this brings the
+              # data-only path in line.
+              find "$dir" -exec touch -t 198002010000 {} +
+              (cd "$dir" && TZ=UTC zip -qrX "$GITHUB_WORKSPACE/dist/$name.jar" . -x '.*')
               echo "::endgroup::"
 
             else
