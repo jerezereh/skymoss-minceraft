@@ -40,6 +40,33 @@ check() {
   fi
 }
 
+# node gets its own check because presence is not enough. tools/*.ts are run
+# directly, which needs type stripping — on by default from 22.18. An older node
+# earns a green tick from `check` and then fails on every single tool with
+# "unknown file extension .ts", which reads as the tool being broken rather than
+# the runtime being too old.
+check_node() {
+  if ! have node; then
+    printf '  \033[31m✗\033[0m %-14s %s (%s)\n' "node" "runs tools/*.ts" "optional"
+    optional_missing+=("node")
+    return
+  fi
+
+  local v major minor
+  v="$(node --version 2>/dev/null | sed 's/^v//')"
+  major="${v%%.*}"
+  minor="$(printf '%s' "$v" | cut -d. -f2)"
+
+  if (( major > 22 )) || { (( major == 22 )) && (( minor >= 18 )); }; then
+    printf '  \033[32m✓\033[0m %-14s %s\n' "node" "v$v"
+  else
+    printf '  \033[33m!\033[0m %-14s %s\n' "node" \
+      "v$v is too old to run tools/*.ts (need >= 22.18)"
+    printf '    %s\n' "use the container form in docs/server-setup.md, or upgrade node"
+    optional_missing+=("node")
+  fi
+}
+
 echo "Skymoss host prerequisites"
 echo
 
@@ -61,7 +88,7 @@ check zstd "compressing ad-hoc archives" optional
 
 echo
 echo "Only needed to EDIT the pack on this host (you can do that on your desktop):"
-check node "runs tools/*.ts" optional
+check_node
 
 echo
 # The compose plugin is a docker subcommand, not its own binary.
