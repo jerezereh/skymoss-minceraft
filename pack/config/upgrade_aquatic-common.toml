@@ -14,13 +14,13 @@
 	#The max height that Nautilus can spawn at
 	# Default: 30
 	# Range: -64 ~ 320
-	"Nautilus max spawn height" = 30
+	"Nautilus max spawn height" = 45
 
 	[mobs.thrasher]
 		#The max height that Thrashers can spawn at
 		# Default: 30
 		# Range: -64 ~ 320
-		"Thrasher max spawn height" = 30
+		"Thrasher max spawn height" = 50
 		#The chance of a Thrasher spawning during the daytime
 		# Default: 0.75
 		# Range: 0.0 ~ 1.0

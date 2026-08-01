@@ -35,6 +35,6 @@ greatPathBlock = ["minecraft:ice", "minecraft:packed_ice", "minecraft:blue_ice"]
 #Valid "Small" creatures
 smallCreatures = ["minecraft:wolf"]
 #Valid "Medium" creatures
-mediumCreatures = ["minecraft:cow"]
+mediumCreatures = ["minecraft:cow", "minecraft:mooshroom"]
 #Valid "Large" creatures
-largeCreatures = ["minecraft:horse"]
+largeCreatures = ["minecraft:horse", "chococraft:chocobo", "minecraft:mule", "minecraft:camel"]

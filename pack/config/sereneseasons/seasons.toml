@@ -43,7 +43,7 @@
 [[season_properties]]
 	melt_percent = 8.33
 	max_rain_time = 180000
-	min_rain_time = 12000
+	min_rain_time = 36000
 	season = "MID_AUTUMN"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -60,7 +60,7 @@
 [[season_properties]]
 	melt_percent = 25.0
 	max_rain_time = 96000
-	min_rain_time = 12000
+	min_rain_time = 36000
 	season = "LATE_SUMMER"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -94,7 +94,7 @@
 [[season_properties]]
 	melt_percent = 25.0
 	max_rain_time = 96000
-	min_rain_time = 12000
+	min_rain_time = 36000
 	season = "EARLY_SUMMER"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -111,7 +111,7 @@
 [[season_properties]]
 	melt_percent = 12.5
 	max_rain_time = 96000
-	min_rain_time = 12000
+	min_rain_time = 24000
 	season = "LATE_SPRING"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -128,7 +128,7 @@
 [[season_properties]]
 	melt_percent = 6.25
 	max_rain_time = 96000
-	min_rain_time = 12000
+	min_rain_time = 24000
 	season = "EARLY_SPRING"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -145,7 +145,7 @@
 [[season_properties]]
 	melt_percent = 8.33
 	max_rain_time = 96000
-	min_rain_time = 12000
+	min_rain_time = 24000
 	season = "MID_SPRING"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -162,7 +162,7 @@
 [[season_properties]]
 	melt_percent = 12.5
 	max_rain_time = 180000
-	min_rain_time = 12000
+	min_rain_time = 36000
 	season = "EARLY_AUTUMN"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -213,7 +213,7 @@
 [[season_properties]]
 	melt_percent = 6.25
 	max_rain_time = 180000
-	min_rain_time = 12000
+	min_rain_time = 36000
 	season = "LATE_AUTUMN"
 	melt_rolls = 1
 	max_thunder_time = 180000
@@ -230,7 +230,7 @@
 [[season_properties]]
 	melt_percent = 25.0
 	max_rain_time = 96000
-	min_rain_time = 12000
+	min_rain_time = 36000
 	season = "MID_SUMMER"
 	melt_rolls = 1
 	max_thunder_time = 180000

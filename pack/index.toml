@@ -437,7 +437,7 @@ file = "config/bigglobe/Big Globe.json5"
 hash = "dae0e05b966c61bd642e8260fb935b98e2b75c2bb0ad9563cc70997d5855c483"
 
 [[files]]
-file = "config/bigglobe/mixins.properties.txt"
+file = "config/bigglobe/mixins.properties"
 hash = "a123bedeb3f6101194c4e65a5fe2fa9c53c4f25fc2759a8674430872c791e794"
 
 [[files]]
@@ -474,7 +474,7 @@ hash = "2769299fdeb4f5bf45a687bacf41704899b58ba83f66430b7135b08dcf78ec4d"
 
 [[files]]
 file = "config/calmernights.toml"
-hash = "b49c4a5ef1f2acfc034dba5a4c69634ac2429a63f0047cdba2bc7dc4630de67b"
+hash = "0dcb8149ba62fcf8c47fe2efeb778840830f0d753079412070d86a71e5bfaa1b"
 
 [[files]]
 file = "config/ceramicbucket-server.toml"
@@ -522,7 +522,7 @@ hash = "eb6244a078fbcd4e6e418fb4327e2480e26c6a35e4676b3e94992ab153201a9e"
 
 [[files]]
 file = "config/compatdelight-common.toml"
-hash = "7d93aa026b11aac7cdaa156433ac1505754959b9134e6e549783e4eaafdada90"
+hash = "c66b408b096b3814f7ed00b7c9032dc2bcc7717b3929a7fa03ee528b14f472b6"
 
 [[files]]
 file = "config/connector.json"
@@ -569,7 +569,7 @@ file = "config/crash_assistant/scripts/startup/example.jexl"
 hash = "346378f04a9e7319cdcb405fad82d6e7f1b36b39e0e4129c00a226b49f41cf37"
 
 [[files]]
-file = "config/crawl.properties.txt"
+file = "config/crawl.properties"
 hash = "abb5df91b7eaa34ef65643e3f35f852f4712ee100deaef238413273a6fe0de72"
 
 [[files]]
@@ -682,7 +682,7 @@ hash = "eab90898a8cff0ada8ebf541433079f5794141bf5195d953a25b9180f082fe18"
 
 [[files]]
 file = "config/createhorsepower-server.toml"
-hash = "65bfab8ed6f5ed4bd22552d839b2a71baef022ea3fde295729e5ad114016820b"
+hash = "6402183c9418a25385053350cda714bb209a2c894d8f561678a0f7f11897b97b"
 
 [[files]]
 file = "config/createlazytick-client.toml"
@@ -698,7 +698,7 @@ hash = "af7f2264c5888ebbdd8f36641ab99a52094dcb0dee0be3f25086b2c1a06084e3"
 
 [[files]]
 file = "config/createpickywheels-common.toml"
-hash = "b5a940305fbd3fd5acabef3402a7e377067235624e2733be832d73e0581eacd3"
+hash = "5979299dc94e44f4d72d95083a135de14d7055ec38c93a0c7a680e43395eb94b"
 
 [[files]]
 file = "config/createpropulsion-client.toml"
@@ -790,7 +790,7 @@ hash = "e92e6772c4b6ec28b9c179c80831d56d11fc65064591424a120133d397b2ab49"
 
 [[files]]
 file = "config/epicfight-client.toml"
-hash = "cc89edd51ae9d8afbf54104b81fea306306b4edbb6999c9975363dd5db30752f"
+hash = "ab34146b174d626eebcdf0072d0400e5d34141a9f117a3a7fd89e2a206c83b42"
 
 [[files]]
 file = "config/epicfight-common.toml"
@@ -813,8 +813,8 @@ file = "config/extremesoundmuffler-client.toml"
 hash = "b71525fff3ed9cb368a48b6458884cf080ff3aed98c0be8edbf6cf144412776a"
 
 [[files]]
-file = "config/fabric/indigo-renderer.properties.txt"
-hash = "0e1612fa2c0ded58ff81b9924e6b4dc8603514073b475bf4641692c84b0ab367"
+file = "config/fabric/indigo-renderer.properties"
+hash = "de817d424a3617f5237cbe0c0c75e021ad40cfcabfe68af54077bd6d49e8992d"
 
 [[files]]
 file = "config/farmersdelight-client.toml"
@@ -865,6 +865,58 @@ file = "config/immersivewind.json"
 hash = "36dec22e5741d74c61a66d1ac5fb6be493463bd6e49e0469b56f1193f9b00ca2"
 
 [[files]]
+file = "config/incontrol-server.toml"
+hash = "f0e413d1b39f86a2542c8019b9ae1ad75bf052f1b83d268f1afa26b8bbe3976b"
+
+[[files]]
+file = "config/incontrol/areas.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/breakevents.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/effects.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/events.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/experience.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/leftclicks.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/loot.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/phases.json"
+hash = "898db08798ef5394cfabf3416d9fc742e7024db56b622d9451bdcc7f697142cd"
+
+[[files]]
+file = "config/incontrol/placeevents.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/rightclicks.json"
+hash = "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+
+[[files]]
+file = "config/incontrol/spawn.json"
+hash = "afb7273c8112c69b1d0088f251c7d2e1b9bc8bf58deded11aa56447099f9b14b"
+
+[[files]]
+file = "config/incontrol/spawner.json"
+hash = "0c039737f538ac787a9a1dcf3a87abf0c18776251359dd3ce7946c8785986640"
+
+[[files]]
 file = "config/invmove.json"
 hash = "8950e2ab4a9f39c80e61522a0242783a061ee3569c2bd15c2cc721aa47f8d119"
 
@@ -881,8 +933,8 @@ file = "config/iris-excluded.json"
 hash = "4d3264b58c502afaeca3f44e8d2db0843c54b8ba957afd21a2d450fe10dafefb"
 
 [[files]]
-file = "config/iris.properties.txt"
-hash = "b34e70e89abb6648d1608fe259bc389af0fa0d2764581cdfe8ffc9a3e1efb79a"
+file = "config/iris.properties"
+hash = "7e732c06305860b9c443d072ebfd17217f4bd88c526055c3ffc2c4c69f79c38d"
 
 [[files]]
 file = "config/jade/hide-blocks.json"
@@ -973,7 +1025,7 @@ file = "config/letmedespawn.json"
 hash = "6af411644e22ede34383135509cb96b2a636d8ed45494b28976514a95537105e"
 
 [[files]]
-file = "config/lithium.properties.txt"
+file = "config/lithium.properties"
 hash = "6cf6f83720071fd1657c8e79b357caf68d40f410ae123e5f922483eb1d1d25be"
 
 [[files]]
@@ -1009,7 +1061,7 @@ file = "config/modernfix-common.toml"
 hash = "ee24e2b1bc100942a1c605f996255742cd6a5bb3662877aa906bc301100ccf27"
 
 [[files]]
-file = "config/modernfix-mixins.properties.txt"
+file = "config/modernfix-mixins.properties"
 hash = "d3a3839bec8e21825fe791a24d6226c1dd3fc94b38588fa52d42cf773868b7c7"
 
 [[files]]
@@ -1273,8 +1325,8 @@ file = "config/originpacks/slimekin/pack.mcmeta"
 hash = "f64193cb84f529858f21cbe314f61ec1ae86aa90fbe74f7cd343bd4e07f0f904"
 
 [[files]]
-file = "config/packetfixer.properties.txt"
-hash = "5ed802b9bb260e3f33a88c4164768b5e5d6ae710f9c011ce6a296512cf7855b0"
+file = "config/packetfixer.properties"
+hash = "f2cf70c46858f7a68a3a2ae980219d7a841c3f04840ca038e2024323254418b1"
 
 [[files]]
 file = "config/particular-common.toml"
@@ -1394,7 +1446,7 @@ hash = "722f7545a5a592f0aed25ae8dd0a4f53f7abaf0bb53da96417d87e9096e75631"
 
 [[files]]
 file = "config/sereneseasons/seasons.toml"
-hash = "e038025e04a96821b4b3c5fab4d9ae8c9f203363df5a261529ce8fe073055054"
+hash = "ef9539d687de6998d8fb1d48a13429a2a03dc42c58fe850f908789bd416fada4"
 
 [[files]]
 file = "config/sereneseasonsplus-common.toml"
@@ -1453,7 +1505,7 @@ file = "config/sodium-fingerprint.json"
 hash = "da40771ae4a77a4a99038d5de15e0b865c3b7c127e992a694edb6d31b6b23953"
 
 [[files]]
-file = "config/sodium-mixins.properties.txt"
+file = "config/sodium-mixins.properties"
 hash = "b627c4456e6fa0bc4b5f85e2f1cd949faedae3cb9afdaf2a5f52e6f3b6ae1f01"
 
 [[files]]
@@ -1477,23 +1529,23 @@ file = "config/sound_physics_remastered/.spra-config-schema.properties"
 hash = "4306aa4a18dfed8b89110f1051ed60f2cdf822921ce59562cbf2b3b0f1941eb2"
 
 [[files]]
-file = "config/sound_physics_remastered/occlusion.properties.txt"
+file = "config/sound_physics_remastered/occlusion.properties"
 hash = "c893310ec8c2552a0d69b48dd5ef9ccc75942e7c49cf39e5a16ad24835c80c28"
 
 [[files]]
-file = "config/sound_physics_remastered/propeller_occlusion_overrides.properties.txt"
+file = "config/sound_physics_remastered/propeller_occlusion_overrides.properties"
 hash = "bf7ca7c5885da82caf8d1e710ec206dd6461653a9eaa089dfb8c9cccdf5cefce"
 
 [[files]]
-file = "config/sound_physics_remastered/reflectivity.properties.txt"
+file = "config/sound_physics_remastered/reflectivity.properties"
 hash = "91281f055d1bea7d18180480e8730c561a9f45c36a2e38c73967b6ac7c869a41"
 
 [[files]]
-file = "config/sound_physics_remastered/sound_rates.properties.txt"
+file = "config/sound_physics_remastered/sound_rates.properties"
 hash = "06ab774bfa520c0785a0e1a78cfdc60e0cdccce4c73f40d9e1ab8112f7511e8e"
 
 [[files]]
-file = "config/sound_physics_remastered/soundphysics.properties.txt"
+file = "config/sound_physics_remastered/soundphysics.properties"
 hash = "e972f39eb629b2ce3e5029c1bcfb76efe3e6e293a4a356b9763b423bf8e46de9"
 
 [[files]]
@@ -1574,7 +1626,7 @@ hash = "58d2977b5fa4d3db0989e96f0ba8664b8bbc520d24646a0649cf25a4ea59518e"
 
 [[files]]
 file = "config/upgrade_aquatic-common.toml"
-hash = "571e1b1491fa4935d9d0cde152491d82b02007df5e60cdc72c8b98a516cf126e"
+hash = "2e01748ccfe1a578ccdb1e21e5de2d93f4443438d22223497ebcec520b2f9d06"
 
 [[files]]
 file = "config/vampiresdelight-client.toml"
@@ -1599,6 +1651,10 @@ hash = "317ea1ab4ec50f837c53bf5c0cef3dd41dbd9832dc35cc5ef3e148739dcc6d42"
 [[files]]
 file = "config/vampirism-server.toml"
 hash = "3a5dae245f4349f81640f069891e1cd4cdd885933c96ac00bbc7a55aed6f4db5"
+
+[[files]]
+file = "config/vpbutcherycompat-common.toml"
+hash = "fd60c1d061f11cf41eb65df496c3647f869d6c1ba9572814071ab3f208677b4c"
 
 [[files]]
 file = "config/watut-client.toml"

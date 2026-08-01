@@ -1,0 +1,91 @@
+[
+  {
+    "when": "position",
+    "dimension": "minecraft:overworld",
+    "minheight": 80,
+    "mob": [
+      "minecraft:zombie",
+      "minecraft:zombie_villager",
+      "minecraft:husk",
+      "minecraft:skeleton",
+      "minecraft:stray",
+      "minecraft:bogged",
+      "minecraft:creeper",
+      "minecraft:spider",
+      "minecraft:cave_spider",
+      "minecraft:enderman",
+      "minecraft:witch",
+      "minecraft:slime",
+      "minecraft:silverfish",
+      "minecraft:phantom",
+      "vampirism:vampire",
+      "vampirism:advanced_vampire",
+      "mowziesmobs:foliaath",
+      "mowziesmobs:baby_foliaath"
+    ],
+    "mincount": {
+      "amount": 10,
+      "hostile": true,
+      "perplayer": true
+    },
+    "result": "deny"
+  },
+  {
+    "when": "position",
+    "dimension": "minecraft:overworld",
+    "phase": "daytime",
+    "minheight": 80,
+    "mob": [
+      "minecraft:zombie",
+      "minecraft:zombie_villager",
+      "minecraft:husk",
+      "minecraft:skeleton",
+      "minecraft:stray",
+      "minecraft:bogged",
+      "minecraft:creeper",
+      "minecraft:spider",
+      "minecraft:cave_spider",
+      "minecraft:enderman",
+      "minecraft:witch",
+      "minecraft:slime",
+      "minecraft:silverfish",
+      "minecraft:phantom",
+      "vampirism:vampire",
+      "vampirism:advanced_vampire",
+      "mowziesmobs:foliaath",
+      "mowziesmobs:baby_foliaath"
+    ],
+    "result": "deny"
+  },
+  {
+    "when": "position",
+    "dimension": "minecraft:overworld",
+    "minheight": 80,
+    "blocktest": {
+      "tag": "minecraft:leaves",
+      "distabove": 8,
+      "onlyair": true
+    },
+    "mob": [
+      "minecraft:zombie",
+      "minecraft:zombie_villager",
+      "minecraft:husk",
+      "minecraft:skeleton",
+      "minecraft:stray",
+      "minecraft:bogged",
+      "minecraft:creeper",
+      "minecraft:spider",
+      "minecraft:cave_spider",
+      "minecraft:enderman",
+      "minecraft:witch",
+      "minecraft:slime",
+      "minecraft:silverfish",
+      "minecraft:phantom",
+      "vampirism:vampire",
+      "vampirism:advanced_vampire",
+      "mowziesmobs:foliaath",
+      "mowziesmobs:baby_foliaath"
+    ],
+    "result": "deny"
+  }
+]

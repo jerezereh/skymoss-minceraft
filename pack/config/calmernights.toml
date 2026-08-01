@@ -2,7 +2,7 @@
 	#Maximum number of hostile mobs allowed in the world
 	# Default: 20
 	# Range: 1 ~ 1000
-	max_hostile_mobs = 50
+	max_hostile_mobs = 100
 	#Spawn cooldown in seconds
 	# Default: 10
 	# Range: 1 ~ 600
@@ -10,7 +10,7 @@
 	#Maximum spawns allowed during the cooldown window
 	# Default: 3
 	# Range: 1 ~ 20
-	spawns_per_window = 3
+	spawns_per_window = 10
 	#Enable debug messages in chat
 	debug_mode = false
 

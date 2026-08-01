@@ -1,0 +1,28 @@
+[heart_swap]
+	#If true, replaces Butchery's heart item with Vampirism's real Human Heart / Weak Human
+	#Heart item when it drops from butchering a villager or player corpse.
+	enableHeartSwap = true
+	#One mapping per line, format "butchery_item_id=vampirism_item_id".
+	#The left-hand ids are guesses. Enable logButcheryRegistryOnStartup below, check your log
+	#for the real 'butchery:...' item ids, and fix these lines to match.
+	#The right-hand ids (vampirism:human_heart, vampirism:weak_human_heart) are confirmed
+	#correct from Vampirism's own source and shouldn't need to change.
+	heartMappings = ["butchery:heart=vampirism:human_heart", "butchery:weak_heart=vampirism:weak_human_heart"]
+	#If true, only swap the item when a Butchery block matching one of humanCorpseKeywords
+	#below is within corpseSearchRadius blocks of where the item dropped.
+	#Turn this off if Butchery's heart item is already villager/player exclusive - the check
+	#is harmless either way, just an extra safety net against swapping a cow/pig heart.
+	requireHumanCorpseNearby = true
+	#Search radius in blocks used by requireHumanCorpseNearby.
+	# Default: 2
+	# Range: 1 ~ 6
+	corpseSearchRadius = 2
+	#A nearby butchery: block whose registry path contains any of these (case-insensitive)
+	#counts as a human corpse for requireHumanCorpseNearby.
+	humanCorpseKeywords = ["villager", "player", "human"]
+
+[debug]
+	#Logs every item, fluid and block registered under the 'butchery' namespace once,
+	#shortly after the world/server finishes starting. Use this to confirm or correct the
+	#ids used above. Safe to leave on - it's one log burst, not continuous spam.
+	logButcheryRegistryOnStartup = true

@@ -1,0 +1,108 @@
+[
+  {
+    "mob": [
+      "benssharks:blacktip_reef_shark",
+      "benssharks:bonnethead_shark",
+      "benssharks:nurse_shark",
+      "benssharks:whitetip_shark",
+      "benssharks:blue_shark",
+      "benssharks:lemon_shark"
+    ],
+    "weights": [3, 3, 2, 2, 3, 2],
+    "attempts": 30,
+    "persecond": 0.5,
+    "amount": {
+      "minimum": 1,
+      "maximum": 2,
+      "groupdistance": 8
+    },
+    "conditions": {
+      "dimension": "minecraft:overworld",
+      "mindist": 16,
+      "maxdist": 48,
+      "minheight": 38,
+      "maxheight": 58,
+      "inwater": true,
+      "maxthis": 6,
+      "maxlocal": 3
+    }
+  },
+  {
+    "mob": [
+      "benssharks:tiger_shark",
+      "benssharks:bull_shark",
+      "benssharks:mako_shark",
+      "benssharks:greatwhiteshark",
+      "upgrade_aquatic:thrasher"
+    ],
+    "weights": [3, 3, 2, 1, 2],
+    "attempts": 25,
+    "persecond": 0.2,
+    "conditions": {
+      "dimension": "minecraft:overworld",
+      "mindist": 24,
+      "maxdist": 64,
+      "minheight": 16,
+      "maxheight": 46,
+      "inwater": true,
+      "maxthis": 3,
+      "maxlocal": 2
+    }
+  },
+  {
+    "mob": [
+      "benssharks:greenland_shark",
+      "benssharks:basking_shark",
+      "benssharks:whale_shark",
+      "benssharks:megalodon",
+      "upgrade_aquatic:great_thrasher"
+    ],
+    "weights": [4, 3, 3, 1, 1],
+    "attempts": 20,
+    "persecond": 0.08,
+    "conditions": {
+      "dimension": "minecraft:overworld",
+      "mindist": 32,
+      "maxdist": 72,
+      "minheight": -20,
+      "maxheight": 20,
+      "inwater": true,
+      "maxthis": 2,
+      "maxlocal": 1
+    }
+  },
+  {
+    "mob": [
+      "upgrade_aquatic:perch",
+      "upgrade_aquatic:pike",
+      "upgrade_aquatic:lionfish",
+      "upgrade_aquatic:flare",
+      "upgrade_aquatic:box_jellyfish",
+      "upgrade_aquatic:cassiopea_jellyfish",
+      "upgrade_aquatic:immortal_jellyfish",
+      "upgrade_aquatic:nautilus",
+      "benssharks:krill",
+      "benssharks:remora",
+      "benssharks:pilot_fish",
+      "benssharks:barracuda"
+    ],
+    "weights": [4, 3, 2, 1, 2, 2, 2, 1, 4, 2, 2, 2],
+    "attempts": 30,
+    "persecond": 0.9,
+    "amount": {
+      "minimum": 2,
+      "maximum": 5,
+      "groupdistance": 6
+    },
+    "conditions": {
+      "dimension": "minecraft:overworld",
+      "mindist": 12,
+      "maxdist": 48,
+      "minheight": -10,
+      "maxheight": 58,
+      "inwater": true,
+      "maxthis": 15,
+      "maxlocal": 10
+    }
+  }
+]
