@@ -260,6 +260,75 @@ Within an hour the Push monitor should go green. If the log shows
 `could not reach Uptime Kuma`, the container has neither `curl` nor `wget`, or the
 URL is using `localhost` instead of the container name.
 
+### Monitoring that GitHub polling is alive
+
+Same problem as the backup, one layer up. The bridge's `/health` is a literal:
+
+```ts
+app.get('/health', async () => ({ ok: true }));
+```
+
+It reports that the web server is listening — nothing about whether polling works. A
+hung `await` inside a tick leaves the process healthy, `/health` returning 200, the
+container green, and GitHub activity silently never reaching Discord. **An empty
+`#ci` looks exactly like a quiet day.** So a second Push monitor:
+
+| Field | Value |
+|---|---|
+| Monitor Type | **Push** |
+| Friendly Name | `GitHub polling` |
+| Heartbeat Interval | `300` (5 min — five missed ticks at the default 60s interval) |
+| Retries | `1` |
+| Resend Notification if Down X times | `0` |
+
+Attach the same Discord notification used by the other monitors.
+
+Copy the **Push URL**, swap the host for the container name, and put it in
+`infra/.env`:
+
+```
+KUMA_POLLER_PUSH_URL=http://uptime-kuma:3001/api/push/<token>
+```
+
+```bash
+docker compose -f infra/docker-compose.yml up -d --build bridge
+```
+
+`--build`, not plain `up -d`: the bridge is a `build:` service, so `up -d` restarts
+the existing image and your code change never ships.
+
+**Why 300 and not tighter.** The heartbeat fires once per tick, so at a 60s interval
+the margin is five missed ticks. Setting it to 120 would page on a single slow GitHub
+response, and a monitor that cries wolf gets muted — which costs you the outage it
+was built for.
+
+**Two mechanisms, deliberately.** The heartbeat fires in a `finally`, so it reflects
+"the loop came back round" rather than "everything succeeded". Individual stream
+failures — a 403 from a missing token permission, a network blip — still tick, so
+they keep the heartbeat alive and are reported separately in `#alerts` after three
+consecutive failures, with the error attached:
+
+> 🔴 **GitHub polling failing: pull requests**
+> 3 consecutive failures. GitHub activity of this kind is not reaching Discord.
+
+A recovery notice follows when it starts working again, and only if a failure was
+announced — a stream that blipped twice and healed stays silent both ways. The
+threshold exists because alerting on the first failure would make `#alerts` noisy,
+which is the same failure the channel split exists to prevent.
+
+What the heartbeat catches that Discord alerts cannot is *silence*: a wedged poller
+has no error to catch and no code running to send anything.
+
+**Verify** — the heartbeat starts on the first tick, so the monitor should go green
+within a minute:
+
+```bash
+docker compose -f infra/docker-compose.yml logs bridge | grep '\[poll\]'
+```
+
+Expect `[poll] ci: watching …` and a `cursors` line at startup. If the log shows
+`kuma push failed`, the URL is using `localhost` instead of the container name.
+
 ### Nightly restart
 
 Modded servers leak memory and accumulate entity and chunk cruft. `restart-server.sh`

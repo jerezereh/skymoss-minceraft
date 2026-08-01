@@ -90,6 +90,22 @@ export const config = {
    */
   alertToken: optional('ALERT_TOKEN', ''),
 
+  /**
+   * Uptime Kuma Push URL pinged after every completed poll tick.
+   *
+   * A dead man's switch, for the same reason the backup has one: the poller cannot
+   * report its own silence. A hung await leaves the container healthy, /health
+   * returning 200, and polling permanently dead with no error to catch and no code
+   * running to send anything. Only the *absence* of an expected ping detects that.
+   *
+   * Distinct from the per-stream Discord alerts, which cover the loud failures — a
+   * 403 from a token missing a permission, a network blip. Those still tick, so they
+   * keep the heartbeat alive and are reported separately with detail.
+   *
+   * Unset disables the heartbeat.
+   */
+  kumaPollerPushUrl: optional('KUMA_POLLER_PUSH_URL', ''),
+
   rcon: {
     host: optional('RCON_HOST', 'mc'),
     port: Number(optional('RCON_PORT', '25575')),
