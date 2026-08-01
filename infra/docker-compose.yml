@@ -291,6 +291,11 @@ services:
       # Bearer token for /alerts. Monitoring tools send unsigned webhooks, so this
       # endpoint uses a token rather than the HMAC scheme used for CI events.
       ALERT_TOKEN: "${ALERT_TOKEN:-}"
+      # Dead man's switch for the poller, same shape as the backup's. /health only
+      # reports that Fastify is listening, so a hung poll leaves the bridge monitor
+      # green while GitHub activity silently stops reaching Discord. Only a missing
+      # heartbeat catches that. Unset disables it.
+      KUMA_POLLER_PUSH_URL: "${KUMA_POLLER_PUSH_URL:-}"
 
       # Server admin commands. RCON is reached over the compose network, so the
       # port is never published to the host.

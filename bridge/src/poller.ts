@@ -16,6 +16,7 @@ import type { BridgeDb } from './db.ts';
 import type { GitHubSide } from './github.ts';
 import type { Relay } from './relay.ts';
 import { config } from './config.ts';
+import { StreamHealth } from './stream-health.ts';
 
 const CURSOR_KEY = 'github_last_polled_at';
 
@@ -34,6 +35,16 @@ const RUN_SEEN_KEY = 'ci_seen_failed_run_ids';
  */
 const RUN_SEEN_LIMIT = 200;
 
+/**
+ * Consecutive failures of one stream before it is announced in Discord.
+ *
+ * Not 1. A single transient 5xx from GitHub is not worth a notification, and an
+ * alert channel that cries wolf every time a request blips is the same channel we
+ * split apart to avoid. Three ticks is three minutes at the default interval —
+ * long enough to rule out a blip, short enough to matter.
+ */
+const STREAM_ALERT_THRESHOLD = 3;
+
 export class Poller {
   private db: BridgeDb;
   private github: GitHubSide;
@@ -41,6 +52,13 @@ export class Poller {
   private intervalMs: number;
   private timer: NodeJS.Timeout | null = null;
   private running = false;
+
+  /**
+   * Edge-triggered failure tracking, in memory rather than the database. A restart
+   * is a fresh start: a real fault re-alerts within the threshold, and a blip leaves
+   * nothing behind that could fire spuriously later.
+   */
+  private streamHealth = new StreamHealth(STREAM_ALERT_THRESHOLD);
 
   constructor(db: BridgeDb, github: GitHubSide, relay: Relay, intervalMs: number) {
     this.db = db;
@@ -91,6 +109,8 @@ export class Poller {
     // twice concurrently and both can pass the dedup check before either records.
     if (this.running) return;
     this.running = true;
+
+    let tickError: string | null = null;
 
     try {
       const cursor = this.db.getPollState(CURSOR_KEY) ?? new Date().toISOString();
@@ -156,6 +176,7 @@ export class Poller {
     } catch (err) {
       // Leave the cursor untouched on failure so the next tick retries the window.
       console.error('[poll] tick failed:', (err as Error).message);
+      tickError = (err as Error).message;
       this.db.logEvent({
         source: 'github',
         eventType: 'poll',
@@ -164,6 +185,13 @@ export class Poller {
       });
     } finally {
       this.running = false;
+
+      // In `finally`, so the heartbeat reflects "the loop came back round" rather
+      // than "everything succeeded". That distinction is the whole point: per-stream
+      // faults are reported to Discord with detail and still tick, while the thing
+      // this cannot survive — a hung await that never returns — produces no ping at
+      // all, which is exactly what Kuma is watching for.
+      await this.pingKuma(tickError === null, tickError ?? 'OK');
     }
   }
 
@@ -199,12 +227,52 @@ export class Poller {
   private async runStream(label: string, fn: () => Promise<void>): Promise<void> {
     try {
       await fn();
+
+      if (this.streamHealth.succeed(label) === 'recovered') {
+        console.log(`[poll] ci: ${label} recovered`);
+        await this.relay
+          .onBridgeAlert({ title: `GitHub polling recovered: ${label}`, recovered: true })
+          .catch((e) => console.error('[poll] ci: recovery notice failed:', (e as Error).message));
+      }
     } catch (err) {
       const status = (err as { status?: number }).status;
       const hint = status === 403 || status === 404
         ? ` — GITHUB_TOKEN is probably missing a read permission for this resource`
         : '';
-      console.error(`[poll] ci: ${label} failed: ${(err as Error).message}${hint}`);
+      const message = `${(err as Error).message}${hint}`;
+
+      const { action, count } = this.streamHealth.fail(label);
+      console.error(`[poll] ci: ${label} failed (${count}x): ${message}`);
+
+      if (action === 'alert') {
+        await this.relay
+          .onBridgeAlert({
+            title: `GitHub polling failing: ${label}`,
+            detail:
+              `${count} consecutive failures. GitHub activity of this kind is not reaching Discord.\n` +
+              `\`${message}\``,
+          })
+          .catch((e) => console.error('[poll] ci: alert failed:', (e as Error).message));
+      }
+    }
+  }
+
+  /**
+   * Ping the Uptime Kuma Push monitor.
+   *
+   * Best-effort and never throws: monitoring that can break the thing it monitors is
+   * worse than no monitoring. A failed ping is itself the signal, since Kuma alerts
+   * on the missing heartbeat.
+   */
+  private async pingKuma(ok: boolean, msg: string): Promise<void> {
+    const base = config.kumaPollerPushUrl;
+    if (!base) return;
+
+    const url = `${base}?status=${ok ? 'up' : 'down'}&msg=${encodeURIComponent(msg.slice(0, 200))}`;
+    try {
+      await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    } catch (err) {
+      console.error('[poll] kuma push failed:', (err as Error).message);
     }
   }
 

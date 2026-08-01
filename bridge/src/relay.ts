@@ -273,6 +273,27 @@ export class Relay {
     });
   }
 
+  /**
+   * A problem with the bridge itself, rather than something it observed.
+   *
+   * Goes to the alert channel: a stream that has stopped working means GitHub
+   * activity is silently not reaching Discord, and the symptom of that is an empty
+   * channel — indistinguishable from a quiet day.
+   */
+  async onBridgeAlert(opts: { title: string; detail?: string; recovered?: boolean }): Promise<void> {
+    const icon = opts.recovered ? '🟢' : '🔴';
+    const lines = [`${icon} **${opts.title}**`];
+    if (opts.detail) lines.push(opts.detail);
+
+    await this.discord.postToAlertChannel(lines.join('\n'));
+    this.db.logEvent({
+      source: 'ci',
+      eventType: opts.recovered ? 'bridge.recovered' : 'bridge.degraded',
+      outcome: 'relayed',
+      payload: opts,
+    });
+  }
+
   // =========================================================================
   // Monitoring alerts
   // =========================================================================
