@@ -114,10 +114,13 @@ Three separate concerns, deliberately handled by three different mechanisms.
 
 ### Backups — restic to Cloudflare R2
 
-Hourly, deduplicated, encrypted, offsite. Runs with the stack, skipped entirely when
-nobody is online, and coordinates `save-off` / `save-all` / `save-on` over RCON so a
-backup can never catch a half-written region file. The world volume is mounted
-**read-only**.
+Hourly, deduplicated, encrypted, offsite. Runs with the stack and coordinates
+`save-off` / `save-all` / `save-on` over RCON so a backup can never catch a
+half-written region file. The world volume is mounted **read-only**.
+
+Backups run whether or not anyone is online — see
+[Monitoring that a backup actually happened](#monitoring-that-a-backup-actually-happened)
+for why. An idle world costs almost nothing to back up under restic.
 
 **Why not Git LFS.** The original plan stored snapshots in a `skymoss-worlds` repo.
 That was the wrong tool:
