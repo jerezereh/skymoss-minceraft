@@ -160,22 +160,6 @@ jobs:
             Neither artifact contains mod jars; both resolve mods from the manifest at
             install time and verify each download against a pinned hash.
 
-  # ---------------------------------------------------------------------------
-  notify:
-    name: Notify Discord
-    needs: [publish]
-    runs-on: ubuntu-latest
-    if: always() && startsWith(github.ref, 'refs/tags/')
-    steps:
-      - uses: actions/checkout@v4
-      - name: Post to bridge
-        env:
-          BRIDGE_URL: ${{ secrets.BRIDGE_URL }}
-          CI_EVENT_SECRET: ${{ secrets.CI_EVENT_SECRET }}
-        run: |
-          ./.github/scripts/notify-bridge.sh \
-            --kind release \
-            --status "${{ needs.publish.result }}" \
-            --name "Release ${GITHUB_REF_NAME}" \
-            --version "${GITHUB_REF_NAME#v}" \
-            --url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"
+  # Discord notification is not a job here. The bridge polls GitHub for published
+  # releases instead — a hosted runner has no route to it, so this job skipped
+  # silently on every release including v0.2.0. See bridge/src/poller.ts.
