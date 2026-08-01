@@ -76,6 +76,49 @@ export class GitHubSide {
     return res.data;
   }
 
+  /**
+   * Pull requests, newest first.
+   *
+   * `state: 'all'` rather than `'open'` on purpose: a PR opened and merged between
+   * two ticks is still worth announcing, and filtering to open would drop it.
+   */
+  async listRecentPullRequests(limit = 20) {
+    const { owner, repo } = repoParts();
+    const res = await this.octokit.pulls.list({
+      owner,
+      repo,
+      state: 'all',
+      sort: 'created',
+      direction: 'desc',
+      per_page: limit,
+    });
+    return res.data;
+  }
+
+  /**
+   * Workflow runs that finished in failure, newest first.
+   *
+   * GitHub accepts conclusion values in the `status` filter, so this asks the API
+   * for failures rather than pulling every run and discarding the green ones.
+   */
+  async listFailedWorkflowRuns(limit = 30) {
+    const { owner, repo } = repoParts();
+    const res = await this.octokit.actions.listWorkflowRunsForRepo({
+      owner,
+      repo,
+      status: 'failure',
+      per_page: limit,
+    });
+    return res.data.workflow_runs;
+  }
+
+  /** Published releases, newest first. */
+  async listRecentReleases(limit = 10) {
+    const { owner, repo } = repoParts();
+    const res = await this.octokit.repos.listReleases({ owner, repo, per_page: limit });
+    return res.data.filter((r) => !r.draft);
+  }
+
   /** Remaining core API quota, for logging when polling. */
   async rateLimitRemaining(): Promise<number> {
     const res = await this.octokit.rateLimit.get();

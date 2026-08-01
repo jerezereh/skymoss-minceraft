@@ -75,18 +75,31 @@ sqlite3 /var/lib/docker/volumes/skymoss_bridge-data/_data/bridge.db \
 ### GitHub
 
 1. Fine-grained PAT with **Issues: read & write** on the repo → `GITHUB_TOKEN`.
-2. Repo secrets for CI notifications: `BRIDGE_URL`, `CI_EVENT_SECRET`.
 
-That's all that's required. Webhooks are **optional** — see below.
+That's all that's required. No repo secrets are needed: pull requests, releases, and
+failed builds are **polled**, not pushed. Webhooks are **optional** — see below.
+
+> Repo secrets (`BRIDGE_URL`, `CI_EVENT_SECRET`) used to be listed here for CI
+> notifications pushed from GitHub Actions. That never worked and could not: a
+> GitHub-hosted runner has no route to a bridge on a private network, so every
+> notify job skipped silently from the first commit through release v0.2.0.
+> `mirror-sync.yml` still uses that path, and legitimately — it runs on a
+> **self-hosted** runner on the host, where `http://bridge:3000` resolves.
 
 ### Webhooks vs polling
 
 GitHub→Discord works two ways, and they can run together.
 
 **Polling** (default) asks GitHub for changes every `GITHUB_POLL_INTERVAL` seconds.
-It needs no inbound connectivity, so it works with no domain and no tunnel. Two API
-calls per tick — about 2% of the rate limit at 60s. The trade is latency: a comment
-takes up to a minute to appear.
+It needs no inbound connectivity, so it works with no domain and no tunnel. Five API
+calls per tick — issues, comments, pull requests, releases, failed workflow runs —
+about 6% of the rate limit at 60s. The trade is latency: a comment takes up to a
+minute to appear.
+
+Failed builds are polled; **successful ones are not reported at all.** Under an
+enforced PR flow every change produces a run, and the green tick is already on the PR
+that caused it. Announcing successes fills the channel with messages nobody reads,
+which is how a notification channel stops working.
 
 **Webhooks** are instant, but GitHub needs a public hostname to POST to. If you have
 one, add a repo webhook → `https://bridge.yourdomain.com/webhook/github`, content type
@@ -156,5 +169,10 @@ duplicate rows in `message_links` and confirm only one container is up.
 **401 on webhooks** — the secret differs between GitHub and `.env`, or a proxy is
 re-serializing the body. The HMAC is computed over the exact raw bytes.
 
-**Nothing in #ci** — `BRIDGE_URL`/`CI_EVENT_SECRET` are unset; `notify-bridge.sh`
-skips silently by design so a down bridge never fails a release. Check the step log.
+**Nothing in #ci** — pull requests, releases and failed builds arrive by polling, so
+check the bridge log for `[poll] ci:` lines rather than a workflow step. On first
+start the cursors are seeded to *now*, deliberately: anything that already existed is
+not replayed into Discord. Only the first new event after that shows up.
+
+**Nothing in #alerts** — `DISCORD_ALERT_CHANNEL_ID` unset falls back to `#ci`, so
+alerts are not lost, just co-located.
