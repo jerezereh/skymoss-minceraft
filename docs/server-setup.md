@@ -84,8 +84,24 @@ file that fails — an archive you cannot trust is worse than none, because you 
 find out when upstream is already gone. It is re-runnable: verified files are skipped,
 so an interrupted run resumes. `sync-mirror` then re-verifies before publishing.
 
-Roughly 400 MB and a few minutes. Nothing else changes: the pack still installs from
-upstream, and this only matters on the day something disappears.
+Roughly 400 MB downloaded and a few minutes. Budget **~800 MB of disk**, though:
+`sync-mirror` copies rather than links, so the jars end up in both
+`/srv/skymoss-jars` and `/srv/mirror/mods`. That is deliberate — the archive stays
+intact if the mirror is ever wiped and rebuilt.
+
+`node` is optional on this host (see `bootstrap.sh`), and running a `.ts` file
+directly needs **Node ≥ 22.18**, where type stripping is on by default. On an older
+Node add `--experimental-strip-types`; with no Node at all, use a container instead:
+
+```bash
+docker run --rm --network bridge \
+  -v "$PWD:/work" -v /srv/skymoss-jars:/out -w /work \
+  node:24-slim node tools/fetch-jars.ts --out /out
+sudo chown -R "$USER" /srv/skymoss-jars
+```
+
+Nothing else changes: the pack still installs from upstream, and this only matters on
+the day something disappears.
 
 **When a mod does vanish**, repoint just that metafile:
 
