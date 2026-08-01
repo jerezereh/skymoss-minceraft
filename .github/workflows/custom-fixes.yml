@@ -39,13 +39,13 @@ jobs:
       # meant a new one would silently never build — the kind of omission you notice
       # when a player reports a bug that was supposedly fixed.
       #
-      #   contains gradlew      -> Gradle project
-      #   contains pack.mcmeta  -> data-only mod, jar is a zip of the directory
+      #   contains gradlew      -> Gradle project, Gradle names its own output
+      #   contains pack.mcmeta  -> data-only mod, jar is <directory>.jar
       #   neither               -> hard error, never a silent skip
       #
-      # Output filename comes from `jar-name` if present. That file exists because the
-      # manifest pins an exact filename, and those do not always match the directory
-      # (KPEnchantFix-neoforge-mod.jar lives in kp-enchant-fix/).
+      # Data-only jars take the directory name, with no override mechanism: if you
+      # want a different filename, rename the directory. An escape hatch here would
+      # only ever be used to keep a name inconsistent with everything around it.
       - name: Build all fixes
         run: |
           set -euo pipefail
@@ -73,10 +73,8 @@ jobs:
                 ! -name '*-sources.jar' ! -name '*-javadoc.jar' -exec cp {} dist/ \;
 
             elif [ -f "$dir/pack.mcmeta" ]; then
-              jar="$name.jar"
-              [ -f "$dir/jar-name" ] && jar="$(tr -d '[:space:]' < "$dir/jar-name")"
-              echo "::group::package (data-only) — $name -> $jar"
-              (cd "$dir" && zip -qr "$GITHUB_WORKSPACE/dist/$jar" . -x '.*' 'jar-name')
+              echo "::group::package (data-only) — $name -> $name.jar"
+              (cd "$dir" && zip -qr "$GITHUB_WORKSPACE/dist/$name.jar" . -x '.*')
               echo "::endgroup::"
 
             else

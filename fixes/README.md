@@ -34,7 +34,7 @@ are legal targets. The jar is simply a zip of this directory:
 
 ```bash
 cd fixes/kp-enchant-fix
-zip -r ../../KPEnchantFix-neoforge-mod.jar . -x '.*'
+zip -r ../../kp-enchant-fix.jar . -x '.*'
 ```
 
 Read its `README.md` first — it explains why v2 overrides the three enchantment
@@ -69,16 +69,17 @@ The build type is inferred from what's inside:
 | Directory contains | Treated as | Output name |
 |---|---|---|
 | `gradlew` | Gradle project | whatever Gradle produces in `build/libs/` |
-| `pack.mcmeta` (no `gradlew`) | data-only mod | `<directory>.jar`, or the contents of a `jar-name` file |
+| `pack.mcmeta` (no `gradlew`) | data-only mod | `<directory>.jar` |
 | neither | **build fails** | — |
 
 That last row is deliberate. A directory CI doesn't understand is an error, not a
 skip: silently not building a fix is how you end up chasing a bug that was supposedly
 already fixed.
 
-`jar-name` exists because the manifest pins an exact filename, and those don't always
-match the directory — `kp-enchant-fix/` builds `KPEnchantFix-neoforge-mod.jar`. Omit
-the file and the jar is named after the directory, which is fine for anything new.
+Data-only jars take the directory name, with no override. If you want a different
+filename, rename the directory — an override would only ever be used to keep a name
+inconsistent with everything around it. (Gradle projects name their own output, so
+there is nothing to reconcile there.)
 
 For a Gradle fix, copying one of the existing projects is the quickest start; both are
 minimal NeoForge setups with the wrapper committed.
