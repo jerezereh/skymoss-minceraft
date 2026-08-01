@@ -13,12 +13,34 @@ function optional(name: string, fallback: string): string {
   return process.env[name] || fallback;
 }
 
+/**
+ * A Discord app exposes several credentials and only one of them logs in a bot.
+ * Pasting the Client Secret (OAuth2, ~32 chars) instead of the Bot Token yields
+ * discord.js's `TokenInvalid`, which names neither the variable nor the mistake.
+ * Bot tokens are three dot-separated parts; checking the shape turns a confusing
+ * crash loop into a sentence that says what to do.
+ */
+function botToken(name: string): string {
+  const v = required(name);
+  if (v.split('.').length !== 3) {
+    console.error(`${name} does not look like a bot token.`);
+    console.error('');
+    console.error('  Bot Token     three dot-separated parts, ~70 chars  <- this one');
+    console.error('  Client Secret single ~32-char string (OAuth2, not for bots)');
+    console.error('');
+    console.error('Get it at: Developer Portal -> your app -> Bot -> Token -> Reset Token');
+    console.error('(Discord shows it once; resetting is the only way to see it again.)');
+    process.exit(1);
+  }
+  return v;
+}
+
 export const config = {
   port: Number(optional('PORT', '3000')),
   databasePath: optional('DATABASE_PATH', './bridge.db'),
 
   discord: {
-    token: required('DISCORD_TOKEN'),
+    token: botToken('DISCORD_TOKEN'),
     guildId: required('DISCORD_GUILD_ID'),
     /** Forum channel: one thread per GitHub issue. */
     issueChannelId: required('DISCORD_ISSUE_CHANNEL_ID'),
