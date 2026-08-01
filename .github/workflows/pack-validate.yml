@@ -1,13 +1,16 @@
 name: Validate pack
 
 on:
+  # Deliberately unfiltered on pull_request, unlike the push trigger below.
+  #
+  # This is a required status check on main. GitHub treats a check that never
+  # reports as *pending*, not passed — so with a paths filter here, any PR touching
+  # only infra/, docs/ or .github/ would show "Expected — Waiting for status" and
+  # could never be merged. There is no "skipped counts as success" behaviour to
+  # lean on.
+  #
+  # The run takes about 30 seconds, so filtering was never buying much anyway.
   pull_request:
-    paths:
-      - 'pack/**'
-      - 'overlays/**'
-      - 'server/**'
-      - 'tools/**'
-      - '.github/workflows/pack-validate.yml'
   push:
     branches: [main]
     paths:
