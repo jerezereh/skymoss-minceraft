@@ -53,6 +53,9 @@ export class Poller {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
 
+  /** When the in-flight tick started, for detecting one that never returns. */
+  private runningSince: number | null = null;
+
   /**
    * Edge-triggered failure tracking, in memory rather than the database. A restart
    * is a fresh start: a real fault re-alerts within the threshold, and a blip leaves
@@ -107,8 +110,22 @@ export class Poller {
   async tick(): Promise<void> {
     // A slow tick must not overlap the next one, or the same events get processed
     // twice concurrently and both can pass the dedup check before either records.
-    if (this.running) return;
+    if (this.running) {
+      // Skipping is normal for one slow tick and pathological if it keeps happening:
+      // a tick that never returns leaves this flag set forever, and every later tick
+      // exits right here without a word. The heartbeat tells Kuma something is wrong;
+      // this is what tells you where to look.
+      const stuckFor = this.runningSince === null ? 0 : Date.now() - this.runningSince;
+      if (stuckFor > this.intervalMs * 5) {
+        console.error(
+          `[poll] previous tick still running after ${Math.round(stuckFor / 1000)}s — polling is stalled`,
+        );
+      }
+      return;
+    }
+
     this.running = true;
+    this.runningSince = Date.now();
 
     let tickError: string | null = null;
 
@@ -184,14 +201,18 @@ export class Poller {
         detail: String(err),
       });
     } finally {
-      this.running = false;
-
       // In `finally`, so the heartbeat reflects "the loop came back round" rather
       // than "everything succeeded". That distinction is the whole point: per-stream
       // faults are reported to Discord with detail and still tick, while the thing
       // this cannot survive — a hung await that never returns — produces no ping at
       // all, which is exactly what Kuma is watching for.
+      //
+      // Before clearing the guard, not after, so the next tick cannot start while
+      // this one is still pinging. pingKuma has its own timeout and never throws.
       await this.pingKuma(tickError === null, tickError ?? 'OK');
+
+      this.running = false;
+      this.runningSince = null;
     }
   }
 
