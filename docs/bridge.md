@@ -74,10 +74,21 @@ sqlite3 /var/lib/docker/volumes/skymoss_bridge-data/_data/bridge.db \
 
 ### GitHub
 
-1. Fine-grained PAT with **Issues: read & write** on the repo → `GITHUB_TOKEN`.
+Fine-grained PAT on the repo → `GITHUB_TOKEN`, with four permissions:
 
-That's all that's required. No repo secrets are needed: pull requests, releases, and
-failed builds are **polled**, not pushed. Webhooks are **optional** — see below.
+| Permission | Needed for |
+|---|---|
+| Issues: **read & write** | relaying issues and comments, both directions |
+| Pull requests: read | announcing opened PRs |
+| Contents: read | announcing published releases |
+| Actions: read | announcing failed builds |
+
+Only the first is needed for the bridge's core job; the other three are the polled CI
+notifications. A token missing one of them fails that stream alone with a 403, logged
+as `[poll] ci: <stream> failed`, and the others keep working.
+
+No repo secrets are needed: pull requests, releases, and failed builds are **polled**,
+not pushed. Webhooks are **optional** — see below.
 
 > Repo secrets (`BRIDGE_URL`, `CI_EVENT_SECRET`) used to be listed here for CI
 > notifications pushed from GitHub Actions. That never worked and could not: a
@@ -156,8 +167,26 @@ npm run typecheck
 npm test
 ```
 
-Tests cover formatting and loop prevention without needing Discord or GitHub
-credentials. For a live loop, use `smee.io` to forward webhooks to localhost.
+Tests cover formatting, loop prevention and CI routing without needing Discord or
+GitHub credentials. For a live loop, use `smee.io` to forward webhooks to localhost.
+
+### Deploying a code change
+
+The bridge is a `build:` service, not a pulled image. `docker compose up -d bridge`
+**reuses the existing image** and will happily restart the container running the old
+code — it only builds when the image is missing. Code changes need `--build`:
+
+```bash
+cd ~/skymoss-minceraft && git pull
+docker compose -f infra/docker-compose.yml up -d --build bridge
+```
+
+Plain `up -d` is correct for `.env` changes and nothing else. To confirm which code
+is running, look for this at startup:
+
+```
+[poll] ci: watching pull requests, releases, failed runs
+```
 
 ## Troubleshooting
 

@@ -60,6 +60,11 @@ export class Poller {
     }
 
     console.log(`[poll] polling GitHub every ${this.intervalMs / 1000}s`);
+    // Printed unconditionally at startup so "is the new build actually running?" is
+    // answerable from the log alone. Seeding lines only appear on a first run, which
+    // makes their absence ambiguous — it took a container rebuild to work out that
+    // an image was stale rather than the polling being broken.
+    console.log('[poll] ci: watching pull requests, releases, failed runs');
     this.timer = setInterval(() => void this.tick(), this.intervalMs);
     void this.tick();
   }
@@ -170,9 +175,25 @@ export class Poller {
    * which is the same way a shared alert channel fails.
    */
   private async pollCiEvents(): Promise<void> {
-    await this.pollPullRequests();
-    await this.pollReleases();
-    await this.pollFailedRuns();
+    // Each stream is isolated. They need different fine-grained PAT permissions —
+    // Pull requests, Contents and Actions respectively — so a token missing one of
+    // them fails exactly one call with a 403. Sharing a try/catch would let that one
+    // gap silence the other two, and the log would name only whichever ran first.
+    await this.runStream('pull requests', () => this.pollPullRequests());
+    await this.runStream('releases', () => this.pollReleases());
+    await this.runStream('failed runs', () => this.pollFailedRuns());
+  }
+
+  private async runStream(label: string, fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      const hint = status === 403 || status === 404
+        ? ` — GITHUB_TOKEN is probably missing a read permission for this resource`
+        : '';
+      console.error(`[poll] ci: ${label} failed: ${(err as Error).message}${hint}`);
+    }
   }
 
   /**
