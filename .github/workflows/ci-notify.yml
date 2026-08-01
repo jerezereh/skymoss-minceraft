@@ -28,4 +28,5 @@ jobs:
             --status "${{ github.event.workflow_run.conclusion }}" \
             --name "${{ github.event.workflow_run.name }}" \
             --detail "branch \`${{ github.event.workflow_run.head_branch }}\`" \
+            --branch "${{ github.event.workflow_run.head_branch }}" \
             --url "${{ github.event.workflow_run.html_url }}"

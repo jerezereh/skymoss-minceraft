@@ -26,6 +26,7 @@ import type { DiscordSide } from './discord.ts';
 import type { GitHubSide } from './github.ts';
 import { config } from './config.ts';
 import { discordToGithub, githubToDiscord, isRelayedComment, threadName } from './format.ts';
+import { isUrgentCiEvent, type CiEvent } from './routing.ts';
 
 export class Relay {
   /** Login of the GitHub account the bridge posts as. */
@@ -239,26 +240,37 @@ export class Relay {
   // CI events
   // =========================================================================
 
-  async onCiEvent(event: {
-    kind: string;
-    status?: string;
-    name?: string;
-    version?: string;
-    url?: string;
-    detail?: string;
-  }): Promise<void> {
+  async onCiEvent(event: CiEvent): Promise<void> {
+    // A pull request has no pass/fail outcome to report, so it gets its own icon
+    // rather than the generic notice one — it reads as an event, not a result.
     const icon =
       event.status === 'success' ? '✅' :
       event.status === 'failure' ? '❌' :
-      event.status === 'cancelled' ? '⚪' : 'ℹ️';
+      event.status === 'cancelled' ? '⚪' :
+      event.kind === 'pr' ? '🔀' : 'ℹ️';
 
     const lines = [`${icon} **${event.name ?? event.kind}**`];
     if (event.version) lines.push(`Version: \`${event.version}\``);
     if (event.detail) lines.push(event.detail);
     if (event.url) lines.push(`<${event.url}>`);
 
-    await this.discord.postToCiChannel(lines.join('\n'));
-    this.db.logEvent({ source: 'ci', eventType: event.kind, outcome: 'relayed', payload: event });
+    // Routed on an explicit `branch` field rather than by parsing `detail`, which
+    // exists only to be rendered and is free to change wording. See routing.ts for
+    // why a broken main counts as an outage.
+    const isDefaultBranchFailure = isUrgentCiEvent(event);
+
+    if (isDefaultBranchFailure) {
+      await this.discord.postToAlertChannel(lines.join('\n'));
+    } else {
+      await this.discord.postToCiChannel(lines.join('\n'));
+    }
+
+    this.db.logEvent({
+      source: 'ci',
+      eventType: event.kind,
+      outcome: 'relayed',
+      payload: { ...event, routedTo: isDefaultBranchFailure ? 'alert' : 'ci' },
+    });
   }
 
   // =========================================================================
@@ -292,7 +304,7 @@ export class Relay {
     const ping = payload?.heartbeat?.ping;
     if (isUp && typeof ping === 'number') lines.push(`Response time: ${ping}ms`);
 
-    await this.discord.postToCiChannel(lines.join('\n'));
+    await this.discord.postToAlertChannel(lines.join('\n'));
     this.db.logEvent({
       source: 'ci',
       eventType: `alert.${isDown ? 'down' : isUp ? 'up' : 'notice'}`,

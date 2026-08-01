@@ -270,6 +270,9 @@ services:
       DISCORD_GUILD_ID: "${DISCORD_GUILD_ID:?set DISCORD_GUILD_ID}"
       DISCORD_ISSUE_CHANNEL_ID: "${DISCORD_ISSUE_CHANNEL_ID:?set DISCORD_ISSUE_CHANNEL_ID}"
       DISCORD_CI_CHANNEL_ID: "${DISCORD_CI_CHANNEL_ID:?set DISCORD_CI_CHANNEL_ID}"
+      # Optional, and unset falls back to the CI channel — so leaving it blank keeps
+      # the previous single-channel behaviour rather than dropping alerts on the floor.
+      DISCORD_ALERT_CHANNEL_ID: "${DISCORD_ALERT_CHANNEL_ID:-}"
 
       GITHUB_TOKEN: "${GITHUB_TOKEN:?set GITHUB_TOKEN}"
       GITHUB_REPO: "${GITHUB_REPO:-jerezereh/skymoss-minceraft}"

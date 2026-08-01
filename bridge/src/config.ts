@@ -44,8 +44,22 @@ export const config = {
     guildId: required('DISCORD_GUILD_ID'),
     /** Forum channel: one thread per GitHub issue. */
     issueChannelId: required('DISCORD_ISSUE_CHANNEL_ID'),
-    /** Text channel for CI/CD and release notifications. */
+    /** Text channel for development activity: PRs, build results, releases. */
     ciChannelId: required('DISCORD_CI_CHANNEL_ID'),
+    /**
+     * Text channel for things that are broken right now: monitor alerts and
+     * failed builds on the default branch.
+     *
+     * Split from the CI channel because Discord's notification settings are
+     * per-channel, and these two want opposite ones. Sharing a channel forces a
+     * choice between muting a 3am outage and being pinged for every pull
+     * request — and the outage is the one that loses, because the routine
+     * traffic is what trains you to ignore it.
+     *
+     * Falls back to the CI channel when unset, so this behaves exactly as before
+     * until the channel actually exists.
+     */
+    alertChannelId: optional('DISCORD_ALERT_CHANNEL_ID', '') || required('DISCORD_CI_CHANNEL_ID'),
   },
 
   github: {
