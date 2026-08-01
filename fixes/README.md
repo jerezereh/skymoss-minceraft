@@ -99,23 +99,48 @@ the sha512 from the CI summary, then `node tools/build-index.ts`.
 The run summary prints each jar's **sha512**, which is what you paste into the
 metafile — no need to compute it by hand.
 
-## Publishing a rebuild
+## Publishing a change
 
-The manifest pins each jar by sha512, so **a rebuilt jar is a different file even if
-the code is identical** — timestamps alone change the hash. Never replace an asset in
-an existing release: every install would fail verification.
+The manifest pins each jar by sha512. Both build paths are **reproducible** — a given
+source tree always produces a byte-identical jar — so the hash is committed alongside
+the source change and CI verifies it, rather than being copied out of a build log
+afterwards.
 
-1. Commit the source change
-2. Tag a **new** release — CI builds the jars and attaches them:
+1. **Branch and change the source.**
+
+2. **Open a PR.** CI builds every fix and compares each jar against the hash pinned in
+   `pack/mods/`. Anything that differs is reported with the value to use — a warning,
+   not a failure, because the metafile legitimately hasn't been updated yet.
+
+3. **Commit the metafile update in the same PR:**
+   ```toml
+   filename = "kp-enchant-fix.jar"                     # if it changed
+   [download]
+   url  = ".../releases/download/custom-fixes-v2/kp-enchant-fix.jar"
+   hash = "<sha512 from the PR run summary>"
+   ```
+   ```bash
+   node tools/build-index.ts && node tools/validate-pack.ts
+   ```
+   Push again; the PR should now report every jar as matching.
+
+4. **Merge, then tag:**
    ```bash
    git tag custom-fixes-v2 && git push origin custom-fixes-v2
    ```
-3. Take the sha512 from the workflow run summary and update that mod's
-   `pack/mods/*.pw.toml` — both `url` and `hash`
-4. `node tools/build-index.ts && node tools/validate-pack.ts`
-5. `node tools/check-urls.ts` to confirm the new URL resolves
 
-The tag must not start with `v` — `release.yml` triggers on `v*` and would build a
+CI rebuilds, **re-verifies against the committed hashes, and refuses to publish on a
+mismatch.** A release therefore cannot contain an artifact the pack manifest
+disagrees with — the failure mode that otherwise surfaces as `Hash invalid!` on every
+client, long after the release looked successful.
+
+`SHA512SUMS.txt` is attached to each release as a record.
+
+> Only mods whose jar actually changed need a metafile update. Because Gradle builds
+> reproducibly, an untouched mod rebuilds to its existing hash and can keep pointing
+> at an older release tag indefinitely.
+
+**The tag must not start with `v`** — `release.yml` triggers on `v*` and would build a
 pack release into the same tag. See `docs/pack-workflow.md`.
 
 ## Sides

@@ -102,25 +102,73 @@ jobs:
           echo "built $built fix(es)"
           ls -la dist/
 
-      # The manifest pins each jar by sha512, so a rebuild is a different file even
-      # when the source is identical — zip timestamps alone change it. Printing the
-      # hashes here removes the manual step of computing them before updating
-      # pack/mods/*.pw.toml.
-      - name: Report hashes for the manifest
+      # Both build paths are reproducible, so a jar built from a given source tree is
+      # byte-identical every time. That lets the hash be an INPUT that is committed
+      # alongside the source change and verified here, rather than an output someone
+      # copies out of a build log into a file afterwards.
+      #
+      # On a PR the metafile legitimately may not be updated yet, so a mismatch is a
+      # notice telling you what to commit. On a tag it is fatal: publishing artifacts
+      # the manifest cannot verify would break every install with "Hash invalid!".
+      - name: Verify jars match the manifest
         run: |
+          set -uo pipefail
+          is_tag=false
+          [[ "${GITHUB_REF}" == refs/tags/custom-fixes-* ]] && is_tag=true
+          mismatch=0
+
           {
             echo "### Built jars"
             echo ""
-            echo "Update \`url\` **and** \`hash\` in the matching \`pack/mods/*.pw.toml\`:"
-            echo ""
-            echo '```'
-            for f in dist/*.jar; do
-              echo "$(basename "$f")"
-              echo "  sha512 = $(sha512sum "$f" | cut -d' ' -f1)"
-              echo ""
-            done
-            echo '```'
+            echo "| jar | manifest | sha512 |"
+            echo "|---|---|---|"
           } >> "$GITHUB_STEP_SUMMARY"
+
+          for f in dist/*.jar; do
+            jar="$(basename "$f")"
+            got="$(sha512sum "$f" | cut -d' ' -f1)"
+            meta="$(grep -rl "^filename = \"${jar}\"\$" pack/mods/ 2>/dev/null | head -1)"
+
+            if [ -z "$meta" ]; then
+              # A new fix before its metafile exists, or a renamed jar.
+              echo "| \`$jar\` | not referenced | \`$got\` |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::notice::$jar is not referenced by any pack/mods/*.pw.toml yet"
+              mismatch=1
+              continue
+            fi
+
+            want="$(sed -n 's/^hash = "\(.*\)"$/\1/p' "$meta")"
+            if [ "$want" = "$got" ]; then
+              echo "| \`$jar\` | matches | \`$got\` |" >> "$GITHUB_STEP_SUMMARY"
+              echo "  OK        $jar"
+            else
+              echo "| \`$jar\` | **MISMATCH** | \`$got\` |" >> "$GITHUB_STEP_SUMMARY"
+              echo "  MISMATCH  $jar"
+              echo "     pinned in $meta: $want"
+              echo "     built:                $got"
+              mismatch=1
+            fi
+          done
+
+          if [ "$mismatch" = "1" ]; then
+            {
+              echo ""
+              echo "Set \`hash\` (and \`url\`/\`filename\` if they changed) in the matching"
+              echo "\`pack/mods/*.pw.toml\`, run \`node tools/build-index.ts\`, and commit that"
+              echo "**in this PR** — then the tag build verifies rather than discovers it."
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            if [ "$is_tag" = "true" ]; then
+              echo "::error::built jars do not match the hashes pinned in pack/mods/. Update the metafiles, then re-tag."
+              exit 1
+            fi
+            echo "::warning::hashes differ from the manifest — commit the updates before tagging"
+          fi
+
+      # A record of what was published, so the release is self-describing without
+      # digging through workflow logs.
+      - name: Write checksum manifest
+        run: (cd dist && sha512sum *.jar > SHA512SUMS.txt && cat SHA512SUMS.txt)
 
       - uses: actions/upload-artifact@v4
         with:
@@ -131,16 +179,19 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/custom-fixes-')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.jar
+          files: |
+            dist/*.jar
+            dist/SHA512SUMS.txt
           body: |
             Bespoke fixes for bugs in mods this pack depends on. These exist nowhere
             upstream — `fixes/` in this repo is their canonical source.
 
             Built by CI from the tagged commit.
 
-            > **Do not replace these assets in place.** `pack/mods/*.pw.toml` pins each
-            > jar by sha512, so overwriting one breaks every install with a hash
-            > mismatch. Publish rebuilds under a new `custom-fixes-*` tag and update
-            > both `url` and `hash` in the metafile.
+            Every jar here was verified against the sha512 already pinned in
+            `pack/mods/*.pw.toml` before publishing — the release cannot contain an
+            artifact the pack manifest disagrees with. `SHA512SUMS.txt` records them.
 
-            Per-file hashes are in the workflow run summary.
+            > **Do not replace these assets in place.** Overwriting one breaks every
+            > install with a hash mismatch. Publish rebuilds under a new
+            > `custom-fixes-*` tag.
