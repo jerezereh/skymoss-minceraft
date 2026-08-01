@@ -61,11 +61,36 @@ Requires JDK 21. First build downloads the NeoForge toolchain and takes a while.
 | `kp-slot-fix` | 1.21.1 | 21.1.172 |
 | `vpsunshade` | 1.21.1 | 21.1.241 |
 
+## Adding a new fix
+
+Create a directory under `fixes/` and CI picks it up — there is nothing to register.
+The build type is inferred from what's inside:
+
+| Directory contains | Treated as | Output name |
+|---|---|---|
+| `gradlew` | Gradle project | whatever Gradle produces in `build/libs/` |
+| `pack.mcmeta` (no `gradlew`) | data-only mod | `<directory>.jar`, or the contents of a `jar-name` file |
+| neither | **build fails** | — |
+
+That last row is deliberate. A directory CI doesn't understand is an error, not a
+skip: silently not building a fix is how you end up chasing a bug that was supposedly
+already fixed.
+
+`jar-name` exists because the manifest pins an exact filename, and those don't always
+match the directory — `kp-enchant-fix/` builds `KPEnchantFix-neoforge-mod.jar`. Omit
+the file and the jar is named after the directory, which is fine for anything new.
+
+For a Gradle fix, copying one of the existing projects is the quickest start; both are
+minimal NeoForge setups with the wrapper committed.
+
+Once it builds, add its `pack/mods/<name>.pw.toml` pointing at the release asset with
+the sha512 from the CI summary, then `node tools/build-index.ts`.
+
 ## CI
 
-`.github/workflows/custom-fixes.yml` builds all three:
+`.github/workflows/custom-fixes.yml` builds every directory under `fixes/`:
 
-- **on a PR touching `fixes/`** — builds to catch breakage before merge
+- **on a PR touching `fixes/`** — builds every fix to catch breakage before merge
 - **on a `custom-fixes-*` tag** — builds and attaches the jars to that release, so
   published artifacts come from a reproducible build rather than someone's laptop
 - **manually** via workflow_dispatch, which uploads them as run artifacts
