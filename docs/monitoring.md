@@ -319,6 +319,18 @@ which is the same failure the channel split exists to prevent.
 What the heartbeat catches that Discord alerts cannot is *silence*: a wedged poller
 has no error to catch and no code running to send anything.
 
+**Why a stall should now self-heal.** Every GitHub call carries a 20s deadline
+(`REQUEST_TIMEOUT_MS` in `github.ts`) — Octokit has no default timeout, so a
+connection that opens and then stalls would otherwise wait forever, leaving the tick's
+`finally` unreached and the in-flight guard set for good. With the deadline the call
+fails, the tick completes, and the next one runs normally; the heartbeat may miss a
+beat but recovers without touching the container. If a tick ever does get stuck
+anyway, each skipped tick logs:
+
+```
+[poll] previous tick still running after 340s — polling is stalled
+```
+
 **Verify** — the heartbeat starts on the first tick, so the monitor should go green
 within a minute:
 

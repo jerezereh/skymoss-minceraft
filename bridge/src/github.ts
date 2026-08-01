@@ -3,11 +3,41 @@
 import { Octokit } from '@octokit/rest';
 import { config, repoParts } from './config.ts';
 
+/**
+ * Per-request ceiling for every GitHub call.
+ *
+ * Octokit has no default timeout, so a connection that opens and then stalls waits
+ * forever. Inside the poller that is the worst available failure: the tick never
+ * returns, its `finally` never runs, the `running` guard stays set, and every later
+ * tick exits immediately. The process stays healthy and polling is dead — silently,
+ * and without a single error to catch.
+ *
+ * 20s is far above a normal response and low enough that a stall resolves within one
+ * poll interval rather than needing the container restarted.
+ */
+const REQUEST_TIMEOUT_MS = 20_000;
+
+/**
+ * fetch with a deadline attached.
+ *
+ * Octokit passes its own signal for some requests, so the two are combined rather
+ * than overwritten — dropping the caller's signal would break Octokit's own
+ * cancellation.
+ */
+const fetchWithTimeout: typeof globalThis.fetch = (input, init) => {
+  const deadline = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const signal = init?.signal ? AbortSignal.any([init.signal, deadline]) : deadline;
+  return globalThis.fetch(input, { ...init, signal });
+};
+
 export class GitHubSide {
   private octokit: Octokit;
 
   constructor() {
-    this.octokit = new Octokit({ auth: config.github.token });
+    this.octokit = new Octokit({
+      auth: config.github.token,
+      request: { fetch: fetchWithTimeout },
+    });
   }
 
   /** Post a comment on an issue. Returns the new comment's id. */
