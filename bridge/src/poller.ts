@@ -65,6 +65,18 @@ export class Poller {
     // makes their absence ambiguous — it took a container rebuild to work out that
     // an image was stale rather than the polling being broken.
     console.log('[poll] ci: watching pull requests, releases, failed runs');
+
+    // Cursor state at startup. Seeding logs exactly once, on the first tick that
+    // finds an empty cursor, so afterwards its absence means any of "already
+    // seeded", "empty API result", or "never got there" — and telling those apart
+    // otherwise needs a sqlite query against the container's volume. Printing the
+    // values makes the answer the first thing in the log instead of the last.
+    const seenRuns = this.db.getPollState(RUN_SEEN_KEY);
+    console.log(
+      `[poll] ci: cursors pr=${this.db.getPollState(PR_CURSOR_KEY) ?? 'unseeded'} ` +
+        `release=${this.db.getPollState(RELEASE_CURSOR_KEY) ?? 'unseeded'} ` +
+        `runs=${seenRuns === undefined ? 'unseeded' : `${(JSON.parse(seenRuns) as number[]).length} seen`}`,
+    );
     this.timer = setInterval(() => void this.tick(), this.intervalMs);
     void this.tick();
   }
