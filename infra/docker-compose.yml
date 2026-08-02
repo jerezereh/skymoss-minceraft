@@ -1,16 +1,21 @@
 # Skymoss — the whole stack, on one Ubuntu host.
 #
-# ALWAYS RUNNING — this pair is a complete, playable server:
+# ALWAYS RUNNING — on its own, a complete playable server:
 #   mc          the dedicated server; installs the pack from the manifest on boot
-#   mirror      Caddy, serving the pack manifest (and optionally the mod jars)
 #
 # OPT-IN, each behind a profile named in COMPOSE_PROFILES:
+#   mirror      mirror       serve the manifest + archived jars locally
 #   backup      mc-backup    restic snapshots to Cloudflare R2
 #   discord     bridge       Discord <-> GitHub relay
 #   monitoring  uptime-kuma  status checks and alerting
 #   ddns        duckdns      keeps a hostname pointed at a changing IP
 #   tunnel      cloudflared  public HTTPS for the HTTP services (needs a domain)
 #   playit      playit       relay ingress, only if behind CGNAT
+#
+# The mirror is opt-in because the manifest is public on GitHub — PACKWIZ_URL
+# defaults to raw.githubusercontent.com, so nothing needs to be published locally
+# before first boot. Run the mirror when you want to control which commit the
+# server installs, or to serve archived jars.
 #
 # Only RCON_PASSWORD is hard-required. Compose interpolates `${VAR:?}` for every
 # service in this file regardless of profile, so a required variable on an opt-in
@@ -72,10 +77,19 @@ services:
       # The pack installs itself from the manifest. packwiz-installer filters to
       # server-side entries, so client-only mods (sodium, iris, …) never land here.
       #
-      # This points at the mirror over the internal compose network, so the pack
-      # install needs no public hostname and no domain. Only override it if you are
-      # deliberately serving the manifest from somewhere external.
-      PACKWIZ_URL: "${PACKWIZ_URL:-http://mirror/pack/pack.toml}"
+      # Defaults to reading the manifest straight from GitHub, which is why a minimum
+      # deployment needs no mirror, no host directory, and no publish step. The repo
+      # is public, and packwiz resolves index.toml, every metafile and every config
+      # relative to this URL — all of which live under pack/.
+      #
+      # Hash verification still applies: GitHub serves the normalised LF bytes the
+      # index was built from, so the pinned sha256 values match. (They would not if
+      # the repo were storing CRLF — see .gitattributes.)
+      #
+      # The trade is that the server tracks `main` on every restart. Point this at
+      # the mirror instead to decide yourself when merges reach it:
+      #   PACKWIZ_URL=http://mirror/pack/pack.toml
+      PACKWIZ_URL: "${PACKWIZ_URL:-https://raw.githubusercontent.com/jerezereh/skymoss-minceraft/main/pack/pack.toml}"
 
       MEMORY: "${MC_MEMORY:-8G}"
 
@@ -139,13 +153,16 @@ services:
       # come from USE_AIKAR_FLAGS + JVM_OPTS. server/jvm.args and server.properties remain
       # repo as the documented reference for those values.
       - mc-data:/data
-    # The pack is fetched from `mirror` during startup, so the mirror must not only
-    # be running but actually serving the manifest. Waiting on its healthcheck rather
-    # than merely on the container turns "mirror is empty" into a clear unhealthy
-    # dependency instead of an opaque packwiz download failure and a crash loop.
-    depends_on:
-      mirror:
-        condition: service_healthy
+    # No depends_on. `mirror` is opt-in now, and Compose treats a dependency on a
+    # service in an inactive profile as a hard error, so declaring it here would put
+    # the mirror back in the required path for every deployment.
+    #
+    # What that costs: startup used to wait on the mirror's healthcheck, which turned
+    # "mirror is empty" into a clear unhealthy dependency rather than an opaque
+    # packwiz download failure. The healthcheck still exists — `docker compose ps`
+    # shows the mirror unhealthy — but nothing orders `mc` behind it. If you run the
+    # mirror, publish the manifest before first boot; `restart: unless-stopped` will
+    # retry until it is there.
     healthcheck:
       test: ["CMD", "mc-health"]
       # First boot downloads ~400 MB of mods and builds the mod cache; the long
@@ -353,6 +370,19 @@ services:
     container_name: skymoss-mirror
     logging: *default-logging
     restart: unless-stopped
+    # Opt-in. The pack manifest is public on GitHub, so a plain server reads it from
+    # raw.githubusercontent.com and needs nothing here — see PACKWIZ_URL above.
+    #
+    # ENABLING THIS PROFILE IS NOT ENOUGH: you must also point PACKWIZ_URL at it, or
+    # the mirror runs and is simply never consulted.
+    #
+    #   COMPOSE_PROFILES=mirror
+    #   PACKWIZ_URL=http://mirror/pack/pack.toml
+    #
+    # Worth running once you care about: choosing when merges reach the server rather
+    # than tracking main on every restart, not depending on GitHub at boot, and
+    # serving the archived jars that a delisted mod gets repointed to.
+    profiles: [mirror]
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ${MIRROR_ROOT:-/srv/mirror}:/srv/mirror:ro
@@ -499,11 +529,10 @@ services:
     command: tunnel --no-autoupdate run
     environment:
       TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:-}"
-    # Only the unprofiled dependency is declared. bridge and uptime-kuma are behind
-    # profiles, and naming them here would make `--profile tunnel` fail unless those
-    # were enabled too. cloudflared retries its origins, so ordering is not required.
-    depends_on:
-      - mirror
+    # No depends_on at all: mirror, bridge and uptime-kuma are each behind a profile
+    # now, and naming any of them would make `--profile tunnel` fail unless that
+    # profile were enabled too. cloudflared retries its origins, so ordering is not
+    # required — only reachability, which is a networks concern.
 
 networks:
   # The internet-facing game server lives here. Kept separate so a compromised
