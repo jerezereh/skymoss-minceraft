@@ -9,6 +9,68 @@ Standing up Skymoss on the Ubuntu host. Everything runs in one Docker Compose st
 
 A domain is **not** required. Nothing in the stack needs public HTTP ingress.
 
+## Minimum deployment
+
+**Two services, one secret.** `mc` and `mirror` always start; everything else —
+backups, the Discord bridge, Uptime Kuma, DuckDNS — sits behind a Compose profile and
+is off until you ask for it.
+
+```bash
+sudo apt update && sudo apt install -y git
+git clone https://github.com/jerezereh/skymoss-minceraft.git /srv/skymoss-minceraft
+cd /srv/skymoss-minceraft
+./infra/bootstrap.sh --install        # docker + compose; log out and back in after
+
+cp infra/.env.example infra/.env
+# set RCON_PASSWORD — that is the only required value
+
+sudo mkdir -p /srv/mirror && sudo chown "$USER" /srv/mirror
+bash tools/sync-mirror.sh --manifest-only /srv/mirror
+
+docker compose -f infra/docker-compose.yml up -d
+```
+
+That is a complete, playable server. First boot downloads ~400 MB of mods and takes a
+few minutes; `docker compose -f infra/docker-compose.yml logs -f mc` shows progress.
+Then [migrate a world](#5-migrate-the-world) if you have one, and give players a way
+in — see [Player ingress](#player-ingress).
+
+Confirm you are getting what you expect before starting anything:
+
+```bash
+docker compose -f infra/docker-compose.yml config --services
+# mirror
+# mc
+```
+
+### Adding the optional pieces
+
+Each is a profile. Set them once in `infra/.env` so ordinary commands keep working
+rather than every invocation needing `--profile` flags:
+
+```
+COMPOSE_PROFILES=backup,discord,monitoring,ddns
+```
+
+| Profile | Starts | Needs | Docs |
+|---|---|---|---|
+| `backup` | `mc-backup` | Cloudflare R2 bucket + restic password | [Backups](#backups) |
+| `discord` | `bridge` | Discord bot token, GitHub PAT | [bridge.md](bridge.md) |
+| `monitoring` | `uptime-kuma` | nothing | [monitoring.md](monitoring.md) |
+| `ddns` | `duckdns` | free DuckDNS subdomain + token | [Player ingress](#player-ingress) |
+| `tunnel` | `cloudflared` | a domain on Cloudflare | [§3](#3-optional-cloudflare-tunnel) |
+| `playit` | `playit` | playit.gg account — only if behind CGNAT | [playit.gg](#playitgg-fallback-only-if-you-end-up-behind-cgnat) |
+
+Then re-run the same `up -d`. Adding a profile never requires tearing anything down.
+
+> Compose evaluates `${VAR:?}` for **every** service in the file, including ones whose
+> profile is inactive — so a hard-required variable on an optional service would make
+> the minimum deployment demand credentials for things it never starts. That is why
+> only `RCON_PASSWORD` is `:?`; the optional services validate their own configuration
+> at startup instead, where the error names the service that actually needs it.
+
+The rest of this document is the long form: what each step is doing and why.
+
 ## 0. Prerequisites
 
 A fresh Ubuntu box has none of this — Docker in particular is not preinstalled.
@@ -29,7 +91,12 @@ What it checks and why:
 | **docker** + compose plugin | everything |
 | **git** | cloning this repo |
 | zstd | compressing ad-hoc archives (optional) |
-| node | *only* to edit the pack on this host — you can do that on your desktop instead |
+| node ≥ 22.18 | *only* to run `tools/*.ts` on this host — you can do that on your desktop instead |
+
+`node` is checked for **version**, not just presence: `tools/*.ts` are run directly,
+which needs type stripping (default from 22.18). An older Node fails every tool with
+`unknown file extension .ts`, which reads as broken tooling rather than a stale
+runtime. Every tool also runs in a container — see [the archive step](#later-archive-the-jars-too-recommended).
 
 After installing Docker you must **log out and back in** before the `docker` command
 works without sudo.
@@ -42,10 +109,16 @@ cp .env.example .env
 $EDITOR .env
 ```
 
-Only three values are strictly required: `RCON_PASSWORD`, `CI_EVENT_SECRET`, and the
-Discord/GitHub credentials if you want the bridge. Anything left empty either has a
-working default or disables that feature cleanly. The stack refuses to start on a
-missing *required* value rather than booting into a half-working state.
+**`RCON_PASSWORD` is the only required value.** Compose refuses to start without it,
+because `mc` genuinely needs it — the restart script, backup coordination, and the
+Discord `/cmd` console all speak RCON.
+
+Everything else is grouped by the profile that consumes it, and each section header in
+`.env.example` says which. Leave a profile's block empty if you are not running it;
+nothing reads it.
+
+`COMPOSE_PROFILES` at the top of the file decides which services exist at all. Empty
+means `mc` and `mirror` only.
 
 ## 2. Publish the manifest
 
@@ -151,7 +224,7 @@ If you do have a domain:
 Set `CLOUDFLARE_TUNNEL_TOKEN`, then start it explicitly — it's behind a profile:
 
 ```bash
-docker compose --profile tunnel up -d
+docker compose -f infra/docker-compose.yml --profile tunnel up -d
 ```
 
 Minecraft is **not** proxied through the tunnel; see "Player ingress" below.
@@ -159,22 +232,34 @@ Minecraft is **not** proxied through the tunnel; see "Player ingress" below.
 ## 4. Start
 
 ```bash
-docker compose up -d
-docker compose logs -f mc
+cd /srv/skymoss-minceraft
+docker compose -f infra/docker-compose.yml up -d
+docker compose -f infra/docker-compose.yml logs -f mc
 ```
 
 First boot downloads ~400 MB of mods and builds the mod cache, which takes a while.
 The healthcheck has a 10-minute grace period for exactly this reason; don't panic if
 the container reports unhealthy before then.
 
+Which services start is decided entirely by `COMPOSE_PROFILES` in `.env`. Check before
+you wonder why something is missing:
+
+```bash
+docker compose -f infra/docker-compose.yml config --services
+```
+
+> **`bridge` is a `build:` service, not a pulled image.** `up -d` reuses the existing
+> image and will restart the container running old code. After changing anything under
+> `bridge/`, use `up -d --build bridge`.
+
 ## 5. Migrate the world
 
 ```bash
-docker compose stop mc
+docker compose -f infra/docker-compose.yml stop mc
 WORLD_VOL=$(docker volume inspect skymoss_mc-data --format '{{ .Mountpoint }}')
 cp -a /path/to/Skymoss/saves/FlyMoss "$WORLD_VOL/FlyMoss"
 chown -R 1000:1000 "$WORLD_VOL/FlyMoss"
-docker compose start mc
+docker compose -f infra/docker-compose.yml start mc
 ```
 
 > **Copy `sublevels/` intact.** It holds the Valkyrien Skies / Create Aeronautics ship
@@ -298,7 +383,7 @@ differ, or the WAN address is in `100.64.0.0/10`, you're behind CGNAT.
 Not started by default:
 
 ```bash
-docker compose --profile playit up -d
+docker compose -f infra/docker-compose.yml --profile playit up -d
 ```
 
 **Generate the secret first.** The Docker agent has no interactive claim flow — that's
@@ -343,9 +428,16 @@ Until that exists, run `tools/sync-mirror.sh` by hand after pack changes.
 
 ## Backups
 
-Set up `restic` for frequent backups, and use the snapshot script for milestone
-Backups run hourly with restic to Cloudflare R2 — deduplicated, encrypted, offsite,
-and skipped when nobody is online. Setup and restore steps are in
+Off by default. Enable with the `backup` profile:
+
+```
+COMPOSE_PROFILES=backup
+```
+
+Hourly restic snapshots to Cloudflare R2 — deduplicated, encrypted, offsite. They run
+**unconditionally, including on an empty server**: `PAUSE_IF_NO_PLAYERS` is false so
+that "no backup in 90 minutes" is unambiguously a fault rather than possibly a quiet
+weekend. Setup and restore steps are in
 [monitoring.md](monitoring.md#backups--restic-to-cloudflare-r2).
 
 ```bash
@@ -372,7 +464,7 @@ docker compose -f infra/docker-compose.yml up -d
 
 `./infra/bootstrap.sh` detects this case and refuses to treat the snap as usable.
 
-**Server exits immediately** — check `docker compose logs mc` for a missing-mod error.
+**Server exits immediately** — check `docker compose -f infra/docker-compose.yml logs mc` for a missing-mod error.
 Usually the mirror is incomplete; re-run `sync-mirror.sh` and read its summary.
 
 **Players kicked for flying** — `allow-flight` must be `true`. Riding a VS2 ship reads
