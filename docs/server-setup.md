@@ -11,9 +11,10 @@ A domain is **not** required. Nothing in the stack needs public HTTP ingress.
 
 ## Minimum deployment
 
-**Two services, one secret.** `mc` and `mirror` always start; everything else —
-backups, the Discord bridge, Uptime Kuma, DuckDNS — sits behind a Compose profile and
-is off until you ask for it.
+**One service, one secret.** `mc` is the only thing that always starts, and on its own
+it is a complete playable server. Everything else — the mirror, backups, the Discord
+bridge, Uptime Kuma, DuckDNS — sits behind a Compose profile and is off until you ask
+for it.
 
 ```bash
 sudo apt update && sudo apt install -y git
@@ -24,24 +25,37 @@ cd /srv/skymoss-minceraft
 cp infra/.env.example infra/.env
 # set RCON_PASSWORD — that is the only required value
 
-sudo mkdir -p /srv/mirror && sudo chown "$USER" /srv/mirror
-bash tools/sync-mirror.sh --manifest-only /srv/mirror
-
 docker compose -f infra/docker-compose.yml up -d
 ```
 
-That is a complete, playable server. First boot downloads ~400 MB of mods and takes a
-few minutes; `docker compose -f infra/docker-compose.yml logs -f mc` shows progress.
-Then [migrate a world](#5-migrate-the-world) if you have one, and give players a way
-in — see [Player ingress](#player-ingress).
+That's it. No host directories, no manifest to publish, no mirror.
+
+`PACKWIZ_URL` defaults to reading the manifest straight from GitHub —
+
+```
+https://raw.githubusercontent.com/jerezereh/skymoss-minceraft/main/pack/pack.toml
+```
+
+— and packwiz resolves `index.toml`, every metafile and every config relative to it.
+Hash verification is unaffected: GitHub serves the same normalised LF bytes the index
+was built from, so the pinned sha256 values match. Mod jars come from Modrinth and a
+GitHub release either way, so nothing is being self-hosted at all.
+
+First boot downloads ~400 MB of mods and takes a few minutes;
+`docker compose -f infra/docker-compose.yml logs -f mc` shows progress. Then
+[migrate a world](#5-migrate-the-world) if you have one, and give players a way in —
+see [Player ingress](#player-ingress).
 
 Confirm you are getting what you expect before starting anything:
 
 ```bash
 docker compose -f infra/docker-compose.yml config --services
-# mirror
 # mc
 ```
+
+> **The trade:** with the default the server installs whatever is on `main` at the
+> moment it restarts. That is fine for a fresh deployment and less fine once people
+> are playing on it — see the `mirror` profile below for taking control of that.
 
 ### Adding the optional pieces
 
@@ -49,11 +63,12 @@ Each is a profile. Set them once in `infra/.env` so ordinary commands keep worki
 rather than every invocation needing `--profile` flags:
 
 ```
-COMPOSE_PROFILES=backup,discord,monitoring,ddns
+COMPOSE_PROFILES=mirror,backup,discord,monitoring,ddns
 ```
 
 | Profile | Starts | Needs | Docs |
 |---|---|---|---|
+| `mirror` | `mirror` | a host directory + `PACKWIZ_URL` | [§2](#2-publish-the-manifest-optional) |
 | `backup` | `mc-backup` | Cloudflare R2 bucket + restic password | [Backups](#backups) |
 | `discord` | `bridge` | Discord bot token, GitHub PAT | [bridge.md](bridge.md) |
 | `monitoring` | `uptime-kuma` | nothing | [monitoring.md](monitoring.md) |
@@ -118,23 +133,45 @@ Everything else is grouped by the profile that consumes it, and each section hea
 nothing reads it.
 
 `COMPOSE_PROFILES` at the top of the file decides which services exist at all. Empty
-means `mc` and `mirror` only.
+means `mc` alone.
 
-## 2. Publish the manifest
+## 2. Publish the manifest (optional)
 
-The server reads the pack manifest from the mirror, so that has to exist first.
+**Skip this for a minimum deployment.** The manifest is public on GitHub and
+`PACKWIZ_URL` reads it from there by default.
+
+Run the mirror when you want one of three things:
+
+- **Control over which commit the server installs.** The default tracks `main`, so a
+  merge reaches the server on its next restart whether or not you were ready. With
+  the mirror, `sync-mirror.sh` is an explicit step you choose to take.
+- **No dependency on GitHub at boot.**
+- **Somewhere to serve archived jars from** when a mod is delisted upstream —
+  see [below](#later-archive-the-jars-too-recommended).
 
 ```bash
 sudo mkdir -p /srv/mirror && sudo chown "$USER" /srv/mirror
 bash /srv/skymoss-minceraft/tools/sync-mirror.sh --manifest-only /srv/mirror
 ```
 
-**You do not need the jars on this host.** Every metafile points at Modrinth (241) or
-a GitHub release (3), so the server downloads mods from upstream and only reads the
-manifest locally. That's ~2 MB of TOML instead of a 400 MB transfer.
+Then **both** of these in `infra/.env` — the profile alone leaves the mirror running
+and never consulted:
 
-`PACKWIZ_URL` defaults to `http://mirror/pack/pack.toml` over the internal compose
-network — no domain, no public hostname.
+```
+COMPOSE_PROFILES=mirror
+PACKWIZ_URL=http://mirror/pack/pack.toml
+```
+
+**You do not need the jars on this host for this.** Every metafile points at Modrinth
+(241) or a GitHub release (3), so the server still downloads mods from upstream and
+only reads the manifest locally. That's ~2 MB of TOML instead of a 400 MB transfer.
+
+> Publish the manifest **before** first boot. Nothing orders `mc` behind the mirror's
+> healthcheck any more — that dependency had to go, because Compose treats a
+> `depends_on` pointing at an inactive profile as a hard error, which would have put
+> the mirror back in the required path for everyone. The healthcheck still exists, so
+> `docker compose ps` will show the mirror unhealthy if it is empty, and `mc` retries
+> until the manifest appears.
 
 ### Later: archive the jars too (recommended)
 
