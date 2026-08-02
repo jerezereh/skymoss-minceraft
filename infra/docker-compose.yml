@@ -1,16 +1,27 @@
 # Skymoss — the whole stack, on one Ubuntu host.
 #
+# ALWAYS RUNNING — this pair is a complete, playable server:
 #   mc          the dedicated server; installs the pack from the manifest on boot
-#   bridge      Discord <-> GitHub relay
-#   mirror      Caddy, serving the pack manifest + mod jars over HTTPS
-#   cloudflared tunnel providing public HTTPS for the mirror and GitHub webhooks
+#   mirror      Caddy, serving the pack manifest (and optionally the mod jars)
 #
-# Nothing here listens on a public port directly except the Minecraft port; the
-# tunnel handles ingress for everything HTTP, so the host needs no inbound
-# firewall rules for the web services.
+# OPT-IN, each behind a profile named in COMPOSE_PROFILES:
+#   backup      mc-backup    restic snapshots to Cloudflare R2
+#   discord     bridge       Discord <-> GitHub relay
+#   monitoring  uptime-kuma  status checks and alerting
+#   ddns        duckdns      keeps a hostname pointed at a changing IP
+#   tunnel      cloudflared  public HTTPS for the HTTP services (needs a domain)
+#   playit      playit       relay ingress, only if behind CGNAT
 #
-#   cp .env.example .env   # fill in secrets first
-#   docker compose up -d
+# Only RCON_PASSWORD is hard-required. Compose interpolates `${VAR:?}` for every
+# service in this file regardless of profile, so a required variable on an opt-in
+# service would force a minimal deployment to supply credentials for things it
+# never starts. The opt-in services validate their own config at startup instead,
+# where the error names the service that actually wants it.
+#
+# Nothing here listens on a public port directly except the Minecraft port.
+#
+#   cp .env.example .env   # set RCON_PASSWORD; add COMPOSE_PROFILES for extras
+#   docker compose -f infra/docker-compose.yml up -d
 
 name: skymoss
 
@@ -166,6 +177,7 @@ services:
     hostname: skymoss
     logging: *default-logging
     restart: unless-stopped
+    profiles: [backup]
     environment:
       BACKUP_INTERVAL: "${BACKUP_INTERVAL:-1h}"
       INITIAL_DELAY: "5m"
@@ -218,10 +230,10 @@ services:
       BACKUP_METHOD: restic
       # S3-compatible endpoint. R2 charges no egress, which matters precisely on the
       # day you actually need a restore.
-      RESTIC_REPOSITORY: "${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY}"
-      RESTIC_PASSWORD: "${RESTIC_PASSWORD:?set RESTIC_PASSWORD}"
-      AWS_ACCESS_KEY_ID: "${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY}"
+      RESTIC_REPOSITORY: "${RESTIC_REPOSITORY:-}"
+      RESTIC_PASSWORD: "${RESTIC_PASSWORD:-}"
+      AWS_ACCESS_KEY_ID: "${R2_ACCESS_KEY_ID:-}"
+      AWS_SECRET_ACCESS_KEY: "${R2_SECRET_ACCESS_KEY:-}"
 
       # Dense recent history, thinning with age. Unlike LFS, pruning here actually
       # frees storage.
@@ -261,20 +273,21 @@ services:
     container_name: skymoss-bridge
     logging: *default-logging
     restart: unless-stopped
+    profiles: [discord]
     environment:
       NODE_ENV: production
       PORT: "3000"
       DATABASE_PATH: /data/bridge.db
 
-      DISCORD_TOKEN: "${DISCORD_TOKEN:?set DISCORD_TOKEN}"
-      DISCORD_GUILD_ID: "${DISCORD_GUILD_ID:?set DISCORD_GUILD_ID}"
-      DISCORD_ISSUE_CHANNEL_ID: "${DISCORD_ISSUE_CHANNEL_ID:?set DISCORD_ISSUE_CHANNEL_ID}"
-      DISCORD_CI_CHANNEL_ID: "${DISCORD_CI_CHANNEL_ID:?set DISCORD_CI_CHANNEL_ID}"
+      DISCORD_TOKEN: "${DISCORD_TOKEN:-}"
+      DISCORD_GUILD_ID: "${DISCORD_GUILD_ID:-}"
+      DISCORD_ISSUE_CHANNEL_ID: "${DISCORD_ISSUE_CHANNEL_ID:-}"
+      DISCORD_CI_CHANNEL_ID: "${DISCORD_CI_CHANNEL_ID:-}"
       # Optional, and unset falls back to the CI channel — so leaving it blank keeps
       # the previous single-channel behaviour rather than dropping alerts on the floor.
       DISCORD_ALERT_CHANNEL_ID: "${DISCORD_ALERT_CHANNEL_ID:-}"
 
-      GITHUB_TOKEN: "${GITHUB_TOKEN:?set GITHUB_TOKEN}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
       GITHUB_REPO: "${GITHUB_REPO:-jerezereh/skymoss-minceraft}"
 
       # Webhooks need a public hostname to deliver to. With no domain, leave this
@@ -286,7 +299,7 @@ services:
       # message_links dedups whichever path sees an event second.
       GITHUB_POLL_INTERVAL: "${GITHUB_POLL_INTERVAL:-60}"
 
-      CI_EVENT_SECRET: "${CI_EVENT_SECRET:?set CI_EVENT_SECRET}"
+      CI_EVENT_SECRET: "${CI_EVENT_SECRET:-}"
 
       # Bearer token for /alerts. Monitoring tools send unsigned webhooks, so this
       # endpoint uses a token rather than the HMAC scheme used for CI events.
@@ -377,6 +390,7 @@ services:
     container_name: skymoss-uptime
     logging: *default-logging
     restart: unless-stopped
+    profiles: [monitoring]
     # Bound to loopback, not 0.0.0.0: this is an admin UI with no domain in front of
     # it. Reach it over SSH (`ssh -L 3001:localhost:3001 host`) or your tailnet.
     ports:
@@ -391,8 +405,10 @@ services:
       # reach it — it is bound to loopback on the host.
       - game
       - packnet
-    depends_on:
-      - bridge
+    # No depends_on: bridge. It was startup ordering only — Kuma posts alerts to
+    # bridge:3000/alerts over HTTP and retries — and now that bridge sits behind the
+    # `discord` profile, a depends_on pointing at it makes `--profile monitoring`
+    # fail outright with "depends on undefined service".
 
   # ---------------------------------------------------------------------------
   # Player ingress
@@ -410,9 +426,10 @@ services:
     container_name: skymoss-duckdns
     logging: *default-logging
     restart: unless-stopped
+    profiles: [ddns]
     environment:
-      SUBDOMAINS: "${DUCKDNS_SUBDOMAIN:?set DUCKDNS_SUBDOMAIN}"
-      TOKEN: "${DUCKDNS_TOKEN:?set DUCKDNS_TOKEN}"
+      SUBDOMAINS: "${DUCKDNS_SUBDOMAIN:-}"
+      TOKEN: "${DUCKDNS_TOKEN:-}"
       # IPv4 only: this host has no IPv6 route, and publishing a AAAA record that
       # nothing can reach makes clients hang before falling back.
       UPDATE_IP: ipv4
@@ -482,10 +499,11 @@ services:
     command: tunnel --no-autoupdate run
     environment:
       TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:-}"
+    # Only the unprofiled dependency is declared. bridge and uptime-kuma are behind
+    # profiles, and naming them here would make `--profile tunnel` fail unless those
+    # were enabled too. cloudflared retries its origins, so ordering is not required.
     depends_on:
       - mirror
-      - bridge
-      - uptime-kuma
 
 networks:
   # The internet-facing game server lives here. Kept separate so a compromised
