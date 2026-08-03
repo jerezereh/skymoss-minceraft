@@ -18,6 +18,7 @@ import {
   type GuildMember,
 } from 'discord.js';
 import { rconCommand, stripFormatting, RconAuthError, type RconOptions } from './rcon.ts';
+import type { Relay } from './relay.ts';
 
 export const commandDefinitions = [
   new SlashCommandBuilder()
@@ -27,6 +28,18 @@ export const commandDefinitions = [
   new SlashCommandBuilder()
     .setName('players')
     .setDescription("Who's online right now?"),
+
+  new SlashCommandBuilder()
+    .setName('file')
+    .setDescription('File this thread as a GitHub issue, copying its whole history as comments'),
+
+  new SlashCommandBuilder()
+    .setName('close')
+    .setDescription('Close the GitHub issue for this thread'),
+
+  new SlashCommandBuilder()
+    .setName('reopen')
+    .setDescription('Reopen the GitHub issue for this thread'),
 
   new SlashCommandBuilder()
     .setName('restart')
@@ -46,6 +59,8 @@ const PRIVILEGED = new Set(['restart', 'cmd']);
 export interface CommandDeps {
   rcon: RconOptions;
   adminRoleId?: string;
+  relay: Relay;
+  discord: { setThreadArchived(threadId: string, archived: boolean): Promise<void> };
 }
 
 function isAdmin(interaction: ChatInputCommandInteraction, adminRoleId?: string): boolean {
@@ -96,6 +111,48 @@ export async function handleCommand(
       case 'players': {
         const list = await rcon(deps, 'list');
         await interaction.editReply(list || 'No response from the server.');
+        break;
+      }
+
+      case 'file': {
+        const result = await deps.relay.fileThreadAsIssue(interaction.channelId);
+
+        if (!result.ok) {
+          const message =
+            result.reason === 'already-linked'
+              ? `ℹ️ Already tracked as [#${result.issueNumber}](${result.url}).`
+              : result.reason === 'not-a-thread'
+                ? '⛔ `/file` only works inside a thread.'
+                : '⛔ Nothing to file — this thread has no messages from a person yet.';
+          await interaction.editReply(message);
+          break;
+        }
+
+        await interaction.editReply(
+          `📮 Filed as [#${result.issueNumber}](${result.url}) — backfilled ${result.backfilled} comment${result.backfilled === 1 ? '' : 's'}.`,
+        );
+        break;
+      }
+
+      case 'close':
+      case 'reopen': {
+        const action = name === 'close' ? 'closed' : 'reopened';
+        const actorName = (interaction.member as GuildMember | null)?.displayName ?? interaction.user.username;
+        const result = await deps.relay.setIssueStateFromDiscord(interaction.channelId, action, actorName);
+
+        if (!result.ok) {
+          await interaction.editReply(
+            result.reason === 'not-linked'
+              ? "⛔ This thread isn't linked to a GitHub issue."
+              : `ℹ️ Already ${action === 'closed' ? 'closed' : 'open'}.`,
+          );
+          break;
+        }
+
+        await interaction.editReply(`🔒 **${actorName}** ${action} [#${result.issueNumber}](${result.url})`);
+        // After the reply, not before: sending into an already-archived thread can
+        // un-archive it right back.
+        await deps.discord.setThreadArchived(interaction.channelId, action === 'closed').catch(() => {});
         break;
       }
 

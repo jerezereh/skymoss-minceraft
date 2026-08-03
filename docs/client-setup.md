@@ -57,7 +57,9 @@ instance keeps your settings.
 
 **Crash mentioning a specific mod** — open an issue with the crash report from
 `crash-reports/`. Right-click the instance → **Folder** to find it. It'll appear in
-Discord too, so you can follow up there.
+Discord too, so you can follow up there. For anything without a crash-report file to
+attach, a new post in the Discord bug-report forum works just as well — it gets filed
+as a GitHub issue automatically.
 
 **Mods fail to download** — a URL may have gone dead upstream. Report it; the fix is
 re-pointing that mod at the mirror.

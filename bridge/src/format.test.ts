@@ -1,9 +1,11 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  bugReportToGithub,
   discordToGithub,
   githubToDiscord,
   isRelayedComment,
+  parseBugReport,
   truncateForDiscord,
   threadName,
   RELAY_MARKER,
@@ -90,6 +92,48 @@ describe('truncateForDiscord', () => {
     // itself contains a 'b' and would otherwise match.
     const relayed = out.split('\n\n…')[0];
     assert.equal(relayed, 'a'.repeat(1500));
+  });
+});
+
+describe('parseBugReport', () => {
+  test('splits priority from description', () => {
+    assert.deepEqual(parseBugReport('#medium: redstone accumulator ponder not working'), {
+      priority: 'medium',
+      description: 'redstone accumulator ponder not working',
+    });
+  });
+
+  test('is case-insensitive on the priority word', () => {
+    assert.equal(parseBugReport('#HIGH: server crashes on join')?.priority, 'high');
+  });
+
+  test('tolerates missing space after the colon', () => {
+    assert.equal(parseBugReport('#low:no recipe for seatwood planks')?.description, 'no recipe for seatwood planks');
+  });
+
+  test('an ordinary post title is not a bug report', () => {
+    assert.equal(parseBugReport('rains way too much'), null);
+  });
+
+  test('rejects a priority word that is not one of the four', () => {
+    assert.equal(parseBugReport('#critical: server on fire'), null);
+  });
+});
+
+describe('bugReportToGithub', () => {
+  test('matches the header already used on hand-triaged issues', () => {
+    const body = bugReportToGithub({ priority: 'medium', reportedBy: 'llewellyns', description: 'rains way too much' });
+    assert.equal(body, '**Priority:** medium\n**Reported by:** llewellyns (Discord)\n\nrains way too much');
+  });
+
+  test('appends attachments when present', () => {
+    const body = bugReportToGithub({
+      priority: 'high',
+      reportedBy: 'ManaJar',
+      description: 'crash on hit',
+      attachments: [{ name: 'crash.txt', url: 'https://cdn.discord/crash.txt' }],
+    });
+    assert.ok(body.includes('crash.txt'));
   });
 });
 

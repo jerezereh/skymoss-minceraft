@@ -41,10 +41,11 @@ async function main() {
   await relay.init();
 
   discord.onMessage((msg) => relay.onDiscordMessage(msg));
+  discord.onThreadCreate((thread) => relay.onDiscordThreadCreated(thread));
 
   await discord.registerCommands();
   discord.onCommand((interaction) =>
-    handleCommand(interaction, { rcon: config.rcon, adminRoleId: config.adminRoleId || undefined }),
+    handleCommand(interaction, { rcon: config.rcon, adminRoleId: config.adminRoleId || undefined, relay, discord }),
   );
 
   if (!config.adminRoleId) {

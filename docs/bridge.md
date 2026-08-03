@@ -6,10 +6,11 @@ relay both ways; nobody has to leave the surface they're comfortable in.
 ## How it works
 
 ```
-GitHub issue opened  ──► forum thread created
-GitHub comment       ──► relayed into that thread, as the GitHub author
-Discord message      ──► posted as an issue comment, attributed to the Discord user
-CI / release events  ──► posted to a separate #ci channel
+GitHub issue opened   ──► forum thread created
+New post in the forum ──► filed as a GitHub issue, thread linked to it
+GitHub comment        ──► relayed into that thread, as the GitHub author
+Discord message       ──► posted as an issue comment, attributed to the Discord user
+CI / release events   ──► posted to a separate #ci channel
 ```
 
 Relayed GitHub comments are posted through a Discord **webhook with a per-message
@@ -68,7 +69,7 @@ sqlite3 /var/lib/docker/volumes/skymoss_bridge-data/_data/bridge.db \
    bodies and the Discord→GitHub direction silently relays nothing.
 3. Invite with scopes `bot applications.commands` and permissions: View Channels,
    Send Messages, Send Messages in Threads, Create Public Threads, Manage Webhooks,
-   Add Reactions, Read Message History.
+   Read Message History.
 4. Make the issue channel a **forum** channel. A text channel works as a fallback but
    threads are tidier in a forum.
 
@@ -128,13 +129,54 @@ from *now* rather than relaying the repo's entire history into Discord.
 
 The bot posting as its own account is why the author check works — don't use a PAT
 belonging to a human who also comments on issues, or their real comments will be
-ignored as self-authored.
+ignored as self-authored. The same now applies to opening issues too: `/file` and a
+report filed straight from Discord both create the issue as the bridge's own account,
+so if that PAT is a human's, an issue *they* open directly on GitHub (not through
+Discord at all) won't get a thread either — same trade-off, just on the other verb.
 
 ## Usage
 
+- Start a new post in the issue channel (a forum post, or — if the channel is plain
+  text instead — just a message typed directly into it, not inside a thread) → files
+  a GitHub issue. A thread is created for it if one didn't already exist (a forum post
+  makes its own; a plain message gets one from the bot), and that thread becomes the
+  issue's thread, so replies from either side land in the same place from then on.
+- Lead the report (the forum post's title, or the message text) with
+  `#low:`, `#medium:`, `#high:` or `#urgent:` → the issue gets the matching
+  `priority-*` label and a `bug` label, and its body is formatted the same way as
+  every issue triaged by hand before this existed:
+  ```
+  **Priority:** medium
+  **Reported by:** username (Discord)
+
+  description
+  ```
+  A report without that prefix still becomes an issue — just without the labels, and
+  with a generic "posted via Discord" body.
 - Talk in a thread → it lands on the issue.
+- `/file`, run inside a thread that isn't linked to an issue yet, files one —
+  covering conversations that never went through the issue channel (or predate this
+  entirely). The thread's oldest message becomes the issue, parsed the same way a new
+  report is; every message after it is created as a comment, oldest first, so the
+  whole prior conversation ends up on GitHub, not just what's said afterward. Running
+  it on an already-linked thread points at the existing issue instead of filing a
+  second one.
+- `/close` or `/reopen`, run inside an issue's thread → closes or reopens the GitHub
+  issue and archives/unarchives the thread to match. Open to anyone, same as
+  commenting — there's no separate triage role. Running it on a thread that's already
+  in that state, or isn't linked to an issue, replies saying so instead of doing
+  anything.
 - Start a line with `//` → local aside, not relayed. Useful for chatter.
-- A ✅ reaction means the message reached GitHub.
+
+The bridge doesn't react to relayed messages — ✅ is reserved for marking things done,
+not as a delivery receipt. A message that lands on GitHub shows up as a comment on the
+issue, or a "📮 Filed as #N" reply for a new report; check the thread if you need to
+confirm something actually went through.
+
+New posts are only turned into issues in the configured forum
+(`DISCORD_ISSUE_CHANNEL_ID`) — threads elsewhere are left alone. A thread the bridge
+itself created for an existing GitHub issue is recognised by its owner (the bot) and
+skipped, so `onIssueOpened` and this path can't loop into each other.
 
 ## Backfill
 
@@ -191,6 +233,11 @@ is running, look for this at startup:
 ## Troubleshooting
 
 **Discord→GitHub silently does nothing** — Message Content Intent is off.
+
+**A new forum post doesn't become an issue** — check it was actually posted in the
+channel named by `DISCORD_ISSUE_CHANNEL_ID`; posts elsewhere are ignored on purpose.
+If it was the right channel, check the bridge log for `[discord] thread handler
+error:` — a bad `GITHUB_TOKEN` or missing Issues-write permission surfaces there.
 
 **Messages relay twice** — the DB was reset or a second instance is running. Check for
 duplicate rows in `message_links` and confirm only one container is up.
