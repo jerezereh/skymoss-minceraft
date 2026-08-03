@@ -421,10 +421,13 @@ services:
     logging: *default-logging
     restart: unless-stopped
     profiles: [monitoring]
-    # Bound to loopback, not 0.0.0.0: this is an admin UI with no domain in front of
-    # it. Reach it over SSH (`ssh -L 3001:localhost:3001 host`) or your tailnet.
+    # Bound to all interfaces, not just loopback: this is an admin UI with no domain
+    # in front of it, but the host has no port-forward for 3001 — only Minecraft's
+    # port is exposed publicly (see the header of this file) — so this only reaches
+    # as far as the LAN (and the tailnet, since the host is on one). Kuma also has
+    # its own login, so this isn't the only thing standing in front of it.
     ports:
-      - "127.0.0.1:3001:3001"
+      - "3001:3001"
     volumes:
       - uptime-kuma-data:/app/data
     security_opt:
