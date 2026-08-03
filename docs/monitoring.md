@@ -26,15 +26,20 @@ set `OVERRIDE_SERVER_PROPERTIES=false`, and accept that server config drifts fro
 
 ## Uptime Kuma
 
-Comes up with the stack, bound to `127.0.0.1:3001` — it's an admin UI with no domain
-in front of it, so it isn't exposed to the network. Reach it over SSH:
+Comes up with the stack, bound to `0.0.0.0:3001` — reachable at
+`http://<the host's LAN IP>:3001` from any device on the LAN (or over the tailnet, if
+the host is on one), no SSH tunnel needed. It isn't exposed beyond that: nothing here
+port-forwards 3001 from the router, so it stops at the LAN boundary. Create an admin
+account on first visit — that login is the access control from there, since anyone on
+the LAN can reach the port.
+
+If you'd rather it stay off the LAN entirely and only reachable by tunnel, change the
+port mapping in `infra/docker-compose.yml` back to `"127.0.0.1:3001:3001"` and use:
 
 ```bash
 ssh -L 3001:localhost:3001 you@your-server
 # then open http://localhost:3001
 ```
-
-or over your tailnet if the box is on one. Create an admin account on first visit.
 
 ### Monitors worth adding
 
