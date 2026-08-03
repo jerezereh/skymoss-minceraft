@@ -107,6 +107,16 @@ export class Relay {
     const repo = payload.repository.full_name;
     const commentId = String(comment.id);
 
+    // GitHub's issue_comment event (webhook and REST alike) fires for pull request
+    // comments too — a PR is just an issue with a pull_request field attached. Without
+    // this check a PR review (Codex, a collaborator, anything) with no thread yet
+    // takes the "predates the bridge" branch below and spawns a Discord thread for
+    // the PR, mislabeled as a GitHub issue.
+    if (issue.pull_request) {
+      this.db.logEvent({ source: 'github', eventType: 'issue_comment', outcome: 'ignored', detail: 'pull request' });
+      return;
+    }
+
     // Defence 1: our own account.
     if (comment.user?.login === this.selfLogin) {
       this.db.logEvent({ source: 'github', eventType: 'issue_comment', outcome: 'ignored', detail: 'self-authored' });

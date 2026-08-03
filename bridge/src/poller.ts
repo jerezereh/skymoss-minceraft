@@ -192,7 +192,7 @@ export class Poller {
       }
     } catch (err) {
       // Leave the cursor untouched on failure so the next tick retries the window.
-      console.error('[poll] tick failed:', (err as Error).message);
+      console.error('[poll] tick failed:', (err as Error).message, (err as any).method, (err as any).url);
       tickError = (err as Error).message;
       this.db.logEvent({
         source: 'github',
