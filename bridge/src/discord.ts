@@ -12,6 +12,7 @@ import {
   GatewayIntentBits,
   Partials,
   ChannelType,
+  MessageType,
   WebhookClient,
   REST,
   Routes,
@@ -119,6 +120,18 @@ export class DiscordSide {
     return { threadId: thread.id, channelId: config.discord.issueChannelId };
   }
 
+  /**
+   * Start a thread on an existing message.
+   *
+   * Used when the issue channel is plain text rather than a forum: there is no
+   * "new post" to react to, so a bug report typed directly into the channel gets its
+   * own thread the same way `createIssueThread`'s text-channel fallback does.
+   */
+  async startThreadFromMessage(msg: Message, name: string): Promise<{ threadId: string; channelId: string }> {
+    const thread = await msg.startThread({ name, autoArchiveDuration: 10080 });
+    return { threadId: thread.id, channelId: msg.channelId };
+  }
+
   /** Relay a GitHub comment into an issue thread, attributed to its GitHub author. */
   async postRelayedComment(opts: {
     threadId: string;
@@ -167,9 +180,63 @@ export class DiscordSide {
     await channel.send({ content: truncateForDiscord(content), allowedMentions: { parse: [] } });
   }
 
+  /** Fetch a channel by id and return it only if it's actually a thread. */
+  async fetchThread(threadId: string): Promise<ThreadChannel | null> {
+    const channel = await this.client.channels.fetch(threadId).catch(() => null);
+    return channel?.isThread() ? channel : null;
+  }
+
+  /**
+   * Every message in a thread, oldest first.
+   *
+   * Paginated past Discord's 100-per-request cap with `before`, so a long thread's
+   * full history comes back rather than just its most recent page — used by `/file`,
+   * where "copy every comment" means every comment, not the last 100.
+   *
+   * A thread started from an already-existing message (right-click → "Create
+   * Thread", as opposed to a forum post or the bot's own `startThreadFromMessage`)
+   * gets an empty type-21 `THREAD_STARTER_MESSAGE` stub in that slot instead of the
+   * real message — the actual content is a separate message back in the parent
+   * channel, reachable through the stub's `message_reference`. Resolved here so
+   * every caller sees the real text rather than a blank line.
+   */
+  async fetchAllMessages(thread: ThreadChannel): Promise<Message[]> {
+    const all: Message[] = [];
+    let before: string | undefined;
+    for (;;) {
+      const batch = await thread.messages.fetch(before ? { limit: 100, before } : { limit: 100 });
+      if (batch.size === 0) break;
+      all.push(...batch.values());
+      before = batch.last()?.id;
+      if (batch.size < 100) break;
+    }
+
+    const resolved = await Promise.all(
+      all.map((m) => (m.type === MessageType.ThreadStarterMessage ? m.fetchReference().catch(() => m) : m)),
+    );
+
+    return resolved.reverse();
+  }
+
   onMessage(handler: (msg: Message) => Promise<void>): void {
     this.client.on('messageCreate', (msg) => {
       handler(msg).catch((err) => console.error('[discord] handler error:', err));
+    });
+  }
+
+  /**
+   * A new post in the issue channel — the Discord-side origin of a GitHub issue.
+   *
+   * `newlyCreated` is false when the event fires because the client just gained
+   * visibility into a thread that already existed (e.g. on startup); only an actually
+   * new thread should ever become a new issue. Scoped to the configured issue channel
+   * so unrelated threads elsewhere in the guild are never considered.
+   */
+  onThreadCreate(handler: (thread: ThreadChannel) => Promise<void>): void {
+    this.client.on('threadCreate', (thread, newlyCreated) => {
+      if (!newlyCreated) return;
+      if (thread.parentId !== config.discord.issueChannelId) return;
+      handler(thread).catch((err) => console.error('[discord] thread handler error:', err));
     });
   }
 

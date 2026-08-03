@@ -94,6 +94,51 @@ export function truncateForDiscord(body: string, sourceUrl?: string): string {
   return cut.trimEnd() + suffix;
 }
 
+/**
+ * Player bug-report shorthand: "#medium: mobs are broken" -> priority + description.
+ *
+ * Matches the convention already used on every issue triaged by hand so far — see
+ * the existing `priority-*` labels and issue bodies. `s` lets the description span
+ * multiple lines (the prefix only has to open the message, not be the whole of it).
+ */
+const BUG_REPORT_PATTERN = /^#(low|medium|high|urgent)\s*:\s*(.+)$/is;
+
+export type BugPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export function parseBugReport(text: string): { priority: BugPriority; description: string } | null {
+  const m = text.trim().match(BUG_REPORT_PATTERN);
+  if (!m) return null;
+  return { priority: m[1].toLowerCase() as BugPriority, description: m[2].trim() };
+}
+
+/**
+ * Format a parsed bug report as a GitHub issue body.
+ *
+ * Deliberately mirrors the header ("**Priority:** …\n**Reported by:** … (Discord)")
+ * already on every hand-triaged issue, so automated and manual reports read the same
+ * way in the tracker.
+ */
+export function bugReportToGithub(opts: {
+  priority: BugPriority;
+  reportedBy: string;
+  description: string;
+  attachments?: { name: string; url: string }[];
+}): string {
+  const parts = [
+    `**Priority:** ${opts.priority}`,
+    `**Reported by:** ${opts.reportedBy} (Discord)`,
+    '',
+    opts.description,
+  ];
+
+  if (opts.attachments?.length) {
+    parts.push('', '---', '**Attachments:**');
+    for (const a of opts.attachments) parts.push(`- [${a.name}](${a.url})`);
+  }
+
+  return parts.join('\n');
+}
+
 /** Discord thread names are capped at 100 characters. */
 export function threadName(issueNumber: number, title: string): string {
   const prefix = `#${issueNumber} `;

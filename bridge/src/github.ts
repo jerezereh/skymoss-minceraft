@@ -40,6 +40,26 @@ export class GitHubSide {
     });
   }
 
+  /** Create a new issue. Returns its number and URL. */
+  async createIssue(opts: { title: string; body: string; labels?: string[] }): Promise<{ number: number; url: string }> {
+    const { owner, repo } = repoParts();
+    const res = await this.octokit.issues.create({
+      owner,
+      repo,
+      title: opts.title,
+      body: opts.body,
+      labels: opts.labels,
+    });
+    return { number: res.data.number, url: res.data.html_url };
+  }
+
+  /** Close or reopen an issue. Returns its URL. */
+  async setIssueState(issueNumber: number, state: 'open' | 'closed'): Promise<{ url: string }> {
+    const { owner, repo } = repoParts();
+    const res = await this.octokit.issues.update({ owner, repo, issue_number: issueNumber, state });
+    return { url: res.data.html_url };
+  }
+
   /** Post a comment on an issue. Returns the new comment's id. */
   async createComment(issueNumber: number, body: string): Promise<string> {
     const { owner, repo } = repoParts();
