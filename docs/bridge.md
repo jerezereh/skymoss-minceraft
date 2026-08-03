@@ -252,3 +252,14 @@ not replayed into Discord. Only the first new event after that shows up.
 
 **Nothing in #alerts** — `DISCORD_ALERT_CHANNEL_ID` unset falls back to `#ci`, so
 alerts are not lost, just co-located.
+
+**`[poll] tick failed: Missing Permissions` on a `GET .../webhooks` call, repeating
+every tick** — the bot's role has lost **Manage Webhooks**; the relay caches its
+webhook in memory, so this only surfaces on the first comment relay after a restart,
+not immediately when the permission is removed. Restore the permission and redeploy.
+
+**A GitHub issue thread appears for something that's actually a pull request** — a
+comment landed on a PR (a review, Codex, anything) before this was guarded against.
+`onIssueComment` now ignores comments whose issue has a `pull_request` field, but if
+one slipped through before that existed: delete the thread in Discord and its row in
+`issue_threads` by hand.
