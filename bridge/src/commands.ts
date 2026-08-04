@@ -101,7 +101,7 @@ export async function handleCommand(
       case 'status': {
         // `list` doubles as a liveness probe: a reply at all means the server is up.
         const list = await rcon(deps, 'list');
-        const tps = await rcon(deps, 'forge tps').catch(() => '');
+        const tps = await rcon(deps, 'neoforge tps').catch(() => '');
         const lines = ['🟢 **Server is up**', '', list];
         if (tps) lines.push('', '```', tps.slice(0, 1200), '```');
         await interaction.editReply(lines.join('\n'));
