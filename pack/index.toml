@@ -2770,6 +2770,11 @@ hash = "753db312dde944dc4278569734f2d14a7e47a9344946de3cf3b10c601ecd9764"
 metafile = true
 
 [[files]]
+file = "mods/sablerainshade.pw.toml"
+hash = "e14db64e38e3b4cad0591cb0e332e9cb5b2a02901fd362eb9039e266088125d7"
+metafile = true
+
+[[files]]
 file = "mods/searchables.pw.toml"
 hash = "ce9ddada6ffd55a512149cc474c6a453281a997a5fdf1b7b4a2cc73f875e704a"
 metafile = true

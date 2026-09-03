@@ -144,6 +144,55 @@ datapack, with build and republish instructions.
 For a while these existed only as compiled jars in a release, which made them
 unmaintainable the moment anything needed changing. That's resolved.
 
+## Externally hosted: sablerainshade
+
+`sablerainshade-1.2.1.jar` (MIT) is a fourth mod with no Modrinth or CurseForge page,
+but it is **not** one of the three above and does not live in `fixes/`. It has its own
+upstream repository and its own release, so that repo is already its canonical source
+and there would be nothing for `fixes/` to be canonical about:
+
+<https://github.com/matchako/sablerainshade>
+
+It makes Sable sub-levels block rain as well as sunlight, so rain-hurt NeoOrigins can
+shelter under a Create: Aeronautics vessel roof — the rain counterpart to what
+`vpsunshade` does for Vampirism and sun. The two patch different damage sources.
+
+`side = "both"`, verified the same way as the others: no `net/minecraft/client`
+references, and `sablerainshade.mixins.json` targets `Level.isRainingAt` with empty
+`client` and `server` lists. That last part makes `both` mandatory rather than merely
+harmless — it is a common mixin config with `required = true`, so a client without the
+jar fails mixin application at startup.
+
+### Bumping it
+
+`tools/sync-fix-hashes.ts` does **not** manage this one. It rewrites metafiles that
+match an asset of a `custom-fixes-*` release on this repo, and this jar is served from
+someone else's release, so it is silently out of scope — correctly, but worth knowing
+before you wonder why a sync left it alone. Edit `filename`, `url`, and `hash` in
+`pack/mods/sablerainshade.pw.toml` by hand, taking the sha256 from the upstream asset:
+
+```bash
+gh api repos/matchako/sablerainshade/releases/tags/latest \
+  --jq '.assets[] | {name, digest, url: .browser_download_url}'
+```
+
+### The rolling tag is a real risk
+
+Upstream publishes to a tag literally named **`latest`**, not an immutable per-version
+tag, and reuses it: the release was created 2026-08-28 and still carries the title
+"sablerainshade 1.0.0" while the asset on it is `sablerainshade-1.2.1.jar`.
+
+That is exactly the failure this section warns against two headings up, except we do
+not control the release. When upstream ships 1.2.2, the asset name changes, and
+`.../download/latest/sablerainshade-1.2.1.jar` starts returning 404 — packwiz aborts
+on a missing file and the server crash-loops on startup. Deleting or moving the tag
+does the same. `node tools/check-urls.ts` catches it, but only after the fact.
+
+If that happens, or before it does, the durable fix is to stop depending on someone
+else's tag: the mod is MIT, so the jar can be attached to one of our own
+`custom-fixes-*` releases (with attribution) and pinned there like the other three.
+That trades a manual re-upload per version for a URL that cannot move underneath us.
+
 ## Releasing
 
 ```bash
