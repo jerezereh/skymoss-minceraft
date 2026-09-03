@@ -2,9 +2,10 @@
  * build-index — generate pack/index.toml and update the index hash in pack/pack.toml.
  *
  * This is a local stand-in for `packwiz refresh`. packwiz publishes no tagged binaries
- * (it is `go install` only), so the repo does not require a Go toolchain just to keep
- * the index current. CI installs real packwiz for exports, and `pack-validate.yml` runs
- * `packwiz refresh --build` to confirm this generator agrees with the reference tool.
+ * and must be built from source, so the repo does not require a Go toolchain just to
+ * keep the index current. CI builds real packwiz from a pinned commit for exports, and
+ * `pack-validate.yml` runs `packwiz refresh` to confirm this generator agrees with the
+ * reference tool.
  *
  * Index format: every file under pack/ except pack.toml and index.toml gets a [[files]]
  * entry with its sha256. Entries under mods/ that end in .pw.toml are marked
