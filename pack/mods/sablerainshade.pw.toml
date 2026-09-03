@@ -20,8 +20,18 @@
 #
 # side = "both", verified rather than assumed: the jar contains no
 # net/minecraft/client references, and sablerainshade.mixins.json targets
-# Level.isRainingAt with empty "client" and "server" lists — a common mixin with
-# required = true, so it must load on both sides or the client refuses to start.
+# Level.isRainingAt — the common superclass, so the mixin applies to ClientLevel and
+# ServerLevel alike rather than being a server-only patch.
+#
+# The effect that matters is server-authoritative: RainDamageHandler cancels the
+# damage, and DebugCommand operates on ServerLevel/ServerPlayer. A dedicated server
+# without this jar leaves players taking rain damage under a vessel roof no matter
+# what their client has.
+#
+# It is "both" for the same reason the fixes/ mods are: packwiz's "server" means
+# dedicated server only and excludes the client entirely, which would take the
+# client's integrated server — singleplayer and LAN — with it. There is no client-only
+# code here, so it is inert on a multiplayer client.
 name = "Sable Rain Shade"
 filename = "sablerainshade-1.2.1.jar"
 side = "both"
