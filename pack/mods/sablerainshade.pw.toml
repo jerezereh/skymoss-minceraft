@@ -1,0 +1,32 @@
+# HAND-WRITTEN — not resolvable from Modrinth or CurseForge.
+# Bespoke mod (modId sablerainshade, MIT) making Sable sub-levels — Create: Aeronautics
+# vessels, Offroad vehicles — block rain as well as sunlight, so rain-hurt NeoOrigins
+# can shelter under a vessel roof. Companion to vpsunshade, which does the sun half for
+# Vampirism; they patch different damage sources and do not overlap.
+#
+# UNLIKE the three mods in fixes/, this one is NOT built here. It has its own upstream
+# repository and its own release, so that repo is its canonical source and there is
+# nothing to vendor:
+#
+#   https://github.com/matchako/sablerainshade
+#
+# It is therefore not touched by tools/sync-fix-hashes.ts, which only rewrites
+# metafiles matching an asset of a `custom-fixes-*` release on this repo. To bump this
+# mod, edit filename/url/hash below by hand from the upstream release.
+#
+# WARNING: upstream publishes to a rolling `latest` tag, not an immutable per-version
+# one. If that release is republished, this exact URL can 404 and every install fails
+# on a missing file. See docs/pack-workflow.md § Orphan mods.
+#
+# side = "both", verified rather than assumed: the jar contains no
+# net/minecraft/client references, and sablerainshade.mixins.json targets
+# Level.isRainingAt with empty "client" and "server" lists — a common mixin with
+# required = true, so it must load on both sides or the client refuses to start.
+name = "Sable Rain Shade"
+filename = "sablerainshade-1.2.1.jar"
+side = "both"
+
+[download]
+url = "https://github.com/matchako/sablerainshade/releases/download/latest/sablerainshade-1.2.1.jar"
+hash-format = "sha256"
+hash = "09496d96252f77d6dcad9330e9f192db762ec130a576485d698768ea991c8e89"
