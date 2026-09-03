@@ -158,10 +158,21 @@ shelter under a Create: Aeronautics vessel roof — the rain counterpart to what
 `vpsunshade` does for Vampirism and sun. The two patch different damage sources.
 
 `side = "both"`, verified the same way as the others: no `net/minecraft/client`
-references, and `sablerainshade.mixins.json` targets `Level.isRainingAt` with empty
-`client` and `server` lists. That last part makes `both` mandatory rather than merely
-harmless — it is a common mixin config with `required = true`, so a client without the
-jar fails mixin application at startup.
+references, and `sablerainshade.mixins.json` targets `Level.isRainingAt` — the common
+superclass, so the mixin applies to `ClientLevel` and `ServerLevel` alike rather than
+being a server-only patch.
+
+The effect that matters is server-authoritative: `RainDamageHandler` cancels the
+damage and `DebugCommand` operates on `ServerLevel`/`ServerPlayer`, so a dedicated
+server missing this jar leaves players taking rain damage under a vessel roof
+regardless of what their client has. It is `both` for the same reason the three above
+are — packwiz's `server` means *dedicated server only* and would exclude the client
+entirely, taking singleplayer and LAN with it.
+
+> A client without the jar does **not** crash. `required = true` in a mixin config
+> means "if this config is loaded and a mixin cannot apply, fail loudly" — a client
+> that never loads the mod never loads the config. The cost of omitting it clientside
+> is a broken integrated server, not a startup failure.
 
 ### Bumping it
 
