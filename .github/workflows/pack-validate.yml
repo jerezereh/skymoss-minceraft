@@ -46,11 +46,33 @@ jobs:
         with:
           go-version: 'stable'
 
-      # packwiz publishes no tagged binaries, so it is installed from source. This
-      # job is what keeps tools/build-index.ts honest: if our generator and the
+      # This job is what keeps tools/build-index.ts honest: if our generator and the
       # reference implementation ever disagree, the diff shows up here.
+      # packwiz publishes no tagged binaries, so it is built from source.
+      #
+      # Built from a clone rather than `go install ...@latest`, for two reasons:
+      #
+      #   - `go install pkg@version` refuses outright to build any module whose
+      #     go.mod contains a `replace` directive. packwiz added one on 2026-09-02
+      #     (9066bf84, repointing go-modrinth at a fork), which broke every run of
+      #     this step within the hour, with no change on our side and an error that
+      #     says nothing about packwiz. `go build` inside a clone honours replace
+      #     directives normally, so this cannot happen again.
+      #   - `@latest` let the reference implementation move under us without a commit
+      #     here. A pinned SHA is the only version of "packwiz agrees with our index"
+      #     that actually means anything.
+      #
+      # To bump: change PACKWIZ_REF, re-run, commit whatever churn results.
       - name: Install packwiz
-        run: go install github.com/packwiz/packwiz@latest
+        env:
+          PACKWIZ_REF: dfd8b68a4796c763e25bad50265ea1f1233e24f1
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/packwiz/packwiz.git "$RUNNER_TEMP/packwiz"
+          git -C "$RUNNER_TEMP/packwiz" checkout --detach "$PACKWIZ_REF"
+          mkdir -p "$RUNNER_TEMP/bin"
+          go build -C "$RUNNER_TEMP/packwiz" -o "$RUNNER_TEMP/bin/packwiz" .
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Refresh and diff
         working-directory: pack
