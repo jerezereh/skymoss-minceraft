@@ -207,12 +207,30 @@ That trades a manual re-upload per version for a URL that cannot move underneath
 ## Releasing
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
 That builds the client `.mrpack` and the server tarball, publishes a GitHub release,
-and posts to Discord. Take a world snapshot first — see the worlds repo README.
+and posts to Discord.
+
+**Take a world snapshot first.** There is no snapshot script — restic replaced the
+`skymoss-worlds` repo and `infra/backup/snapshot-world.sh` along with it. Force an
+immediate run of the hourly backup instead of waiting for it:
+
+```bash
+docker exec skymoss-backup backup now
+docker compose -f infra/docker-compose.yml logs --tail 30 mc-backup
+```
+
+It coordinates `save-off` / `save-all` / `save-on` over RCON, so the snapshot cannot
+catch a half-written region file. Confirm it reached R2 before tagging — see
+[Backups — restic to Cloudflare R2](monitoring.md#backups--restic-to-cloudflare-r2)
+for `restic snapshots` and the restore path.
+
+> `mc-backup` is `profiles: [backup]`. If `docker compose ps mc-backup` shows nothing,
+> backups are not running on that host at all, which is a bigger problem than the
+> release.
 
 ## Re-importing from scratch
 
