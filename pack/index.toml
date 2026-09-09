@@ -2235,6 +2235,11 @@ hash = "788d9d227f95e98dfc68c0fd14324bf05a14bf067b4388d5f055c2c2321a36bb"
 metafile = true
 
 [[files]]
+file = "mods/createobbcollisioncrashfix.pw.toml"
+hash = "71bc97f9fd5f18133c97f4004b96b6bfda3d580bbc706ab503535e3650a854e5"
+metafile = true
+
+[[files]]
 file = "mods/creativecore.pw.toml"
 hash = "d1dd0981cbd7ae9601c9c4603f88826b68a0c7e76fc12ef6bc80f08188d7dfb8"
 metafile = true
