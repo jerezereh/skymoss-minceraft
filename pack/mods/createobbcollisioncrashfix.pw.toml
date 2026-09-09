@@ -1,0 +1,13 @@
+name = "Create OBB Collision Crash Fix"
+filename = "obbcrashfix-1.0.0.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/UwzQRF4j/versions/8YG5mlPN/obbcrashfix-1.0.0.jar"
+hash-format = "sha512"
+hash = "81638ff19a8628e753f00c6a33081799382807ef979f866fb3472692b5fef7e406c1661f86608ff00f11507399b29756cd51064a7188afebe04e47fcdb43ba72"
+
+[update]
+[update.modrinth]
+mod-id = "UwzQRF4j"
+version = "8YG5mlPN"
